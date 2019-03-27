@@ -22,13 +22,15 @@ var hmt_client_processor = {
     return 'https://tempintegration-fullsteam-api.azurewebsites.net/'
   },
   
-  submit_transaction: function(method, card, transaction, spreedly_environment_key, cb){
+  submit_transaction: function(card, transaction, spreedly_environment_key, cb){
     
     // determine the method to use spreedly | fullsteam
     
-    if(method == 'spreedly')  
+    var processor_method = transaction.processor_method
+    
+    if(processor_method == 'spreedly')
       this._submit_spreedly(card, transaction, spreedly_environment_key, cb)
-    else if(method == 'fullsteam')
+    else if(processor_method == 'fullsteam')
       this._submit_fullsteam(card, transaction, cb)
       
   },

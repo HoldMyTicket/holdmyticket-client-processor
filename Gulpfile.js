@@ -15,13 +15,17 @@ function compileJs() {
     .pipe(gulp.dest('./dist'));
 }
 
-function defaultTask(cb) {
+function defaultTask(done) {
   if (validTypes.includes(typeFlag)) {
-    const compile = gulp.series('compileJs');
-    compile(cb);
+    const compile = gulp.series(compileJs);
+    compile(done);
   } else {
     console.log('\x1b[31m%s\x1b[0m', '\nInvalid pipeline!\nOptions: publish');
   }
+
+  setTimeout(function() {
+    console.log('\x1b[32m%s\x1b[0m', 'If not errors occured then you can now run the command "yarn publish" to publish a new version to the npm registry.');
+  }, 2000);
 }
 
 //EXPOSE THE TASKS TO GULP

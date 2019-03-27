@@ -22,24 +22,29 @@ var hmt_client_processor = {
     return 'https://tempintegration-fullsteam-api.azurewebsites.net/'
   },
   
-  submit_transaction: function(card, transaction, spreedly_environment_key, cb){
+  submit_transaction: function(card, transaction, cb){
     
     // determine the method to use spreedly | fullsteam
     
     var processor_method = transaction.processor_method
     
+    console.log('transaction', transaction)
+    
     if(processor_method == 'spreedly')
-      this._submit_spreedly(card, transaction, spreedly_environment_key, cb)
+      this._submit_spreedly(card, transaction, cb)
     else if(processor_method == 'fullsteam')
       this._submit_fullsteam(card, transaction, cb)
+    else
+      this._throw_error('No processing method setup', cb)
+    
       
   },
   
-  _submit_spreedly: function(card, transaction, spreedly_environment_key, cb){
+  _submit_spreedly: function(card, transaction, cb){
     
     var me = this
     
-    me._get_spreedly_token(card, spreedly_environment_key, function(err, token_res){
+    me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
       
       if(err) {
         if(cb) cb(err)
@@ -48,7 +53,7 @@ var hmt_client_processor = {
 
       var token = token_res.transaction.payment_method.token
 
-      me._submit_spreedly_transaction(token, transaction, spreedly_environment_key, function(err, transaction_res){
+      me._submit_spreedly_transaction(token, transaction, function(err, transaction_res){
         
         hmt_client_processor._respond(err, transaction_res, cb)
         
@@ -58,7 +63,7 @@ var hmt_client_processor = {
     
   },
   
-  _submit_spreedly_transaction(token, transaction, spreedly_environment_key, cb){
+  _submit_spreedly_transaction(token, transaction, cb){
 
     transaction.payment_token = token
 
@@ -170,6 +175,15 @@ var hmt_client_processor = {
       cb(null, res)
     
   },
+  
+  _throw_error: function(err, cb){
+    
+    alert(err)
+    
+    if(cb)
+      cb(err)
+    
+  }
   
   // _jsonToFormData: function (inJSON, inTestJSON, inFormData, parentKey) {
   //   // http://stackoverflow.com/a/22783314/260665

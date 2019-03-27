@@ -4,5 +4,10 @@
   "main": "index.js",
   "repository": "https://github.com/HoldMyTicket/holdmyticket-client-processor.git",
   "author": "wes@holdmyticket.com",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^4.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-uglify": "^3.0.2"
+  }
 }

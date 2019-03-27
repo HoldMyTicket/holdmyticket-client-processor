@@ -6,7 +6,7 @@ const concat = require('gulp-concat');
 const typeFlag =
   process.argv[process.argv.findIndex(arg => arg === '--type') + 1];
 
-const validTypes = ['release'];
+const validTypes = ['publish'];
 
 function compileJs() {
   return gulp.src(['src/*.js'], { since: gulp.lastRun(compileJs) })
@@ -20,7 +20,7 @@ function defaultTask(cb) {
     const compile = gulp.series('compileJs');
     compile(cb);
   } else {
-    console.log('\x1b[31m%s\x1b[0m', '\nInvalid pipeline!\nOptions: release');
+    console.log('\x1b[31m%s\x1b[0m', '\nInvalid pipeline!\nOptions: publish');
   }
 }
 

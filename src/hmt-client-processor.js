@@ -63,7 +63,7 @@ var hmt_client_processor = {
     
   },
   
-  _submit_spreedly_transaction(token, transaction, cb){
+  _submit_spreedly_transaction: function(token, transaction, cb){
 
     transaction.payment_token = token
 

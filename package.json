@@ -1,18 +1,16 @@
 {
   "name": "holdmyticket-client-processor",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "main": "index.js",
   "repository": "https://github.com/HoldMyTicket/holdmyticket-client-processor.git",
   "author": "wes@holdmyticket.com",
   "license": "MIT",
   "devDependencies": {
-    "gulp": "^4.0.0",
-    "gulp-concat": "^2.6.1",
-    "gulp-uglify": "^3.0.2"
-  },
-  "dependencies": {
     "@babel/core": "^7.4.3",
     "child_process": "^1.0.2",
-    "gulp-babel": "^8.0.0-beta.2"
+    "gulp": "^4.0.0",
+    "gulp-babel": "^8.0.0-beta.2",
+    "gulp-concat": "^2.6.1",
+    "gulp-uglify": "^3.0.2"
   }
 }

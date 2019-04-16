@@ -35,7 +35,7 @@ var hmt_client_processor = {
     else if(transaction.processor_method == 'fullsteam')
       this._submit_fullsteam(card, transaction, cb)
     else
-      this._throw_error('No processing method setup', cb)
+      this._throw_error(true, {status: 'error', msg: 'No processing method setup'}, cb)
       
   },
   

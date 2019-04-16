@@ -22,6 +22,16 @@ function compileJs() {
     
 }
 
+function startDevServer(){
+  
+  util.log(util.colors.green('Opening browser on port: http://localhost:8383.'));
+
+  childProcess.exec('php -S localhost:8383 -t src', function(stdout, stderror) {
+    
+  })
+  
+}
+
 function defaultTask(done) {
 
   if (validTypes.includes(typeFlag)) {
@@ -30,26 +40,16 @@ function defaultTask(done) {
     
     compile(done);
 
-    if(typeFlag == 'dev'){
+    if(typeFlag == 'dev')
+      startDevServer()
 
-      util.log(util.colors.green('Opening browser on port: http://localhost:8383.'));
-
-      childProcess.exec('php -S localhost:8383 -t src', function(stdout, stderror) {
-        
-      })
-
-    }
+    if(typeFlag == 'publish')    
+      setTimeout(function() {
+        console.log('\x1b[32m%s\x1b[0m', 'If not errors occured then you can now run the command "yarn publish" to publish a new version to the npm registry.');
+      }, 2000);
     
   } else {
     console.log('\x1b[31m%s\x1b[0m', '\nInvalid pipeline!\nOptions: publish');
-  }
-
-  if(typeFlag == 'publish'){
-    
-    setTimeout(function() {
-      console.log('\x1b[32m%s\x1b[0m', 'If not errors occured then you can now run the command "yarn publish" to publish a new version to the npm registry.');
-    }, 2000);
-    
   }
   
   gulp.watch(['src/*.js'], gulp.series(gulp.parallel('compileJs')));

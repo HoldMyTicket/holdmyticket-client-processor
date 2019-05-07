@@ -22,7 +22,7 @@ var hmt_client_processor = {
   
   fullsteam_url: function(){
 
-    return 'https://tempintegration-fullsteam-api.azurewebsites.net/'
+    return 'https://api-ext.fullsteampay.net/'
 
   },
   
@@ -105,15 +105,15 @@ var hmt_client_processor = {
       var fullsteam_authentication_key = authentication_key_res.status == 'ok' ? authentication_key_res.authenticationKey : null
       
       // TODO validate the key
-    
+      
       me._get_fullsteam_token(card, fullsteam_authentication_key, function(err, token_res){
-        
+      
         me._submit_fullsteam_transaction(card, transaction, fullsteam_authentication_key, function(err, transaction_res){
-          
-          
-          
+      
+      
+      
         })
-        
+      
       })
 
     })

@@ -1,17 +1,12 @@
 
 var hmt_client_processor = {
 
-  env: 'local',
+  api_url: '', // set when the script is loaded
 
   url_prefix: function(endpoint){
 
-    if(this.env == 'local')
-      return 'http://holdmyticket.loc/'+endpoint
-    if(this.env == 'dev')
-      return 'https://dev.holdmyticket.com/'+endpoint
-    if(this.env == 'production')
-      return 'https://holdmyticket.com/'+endpoint
-    
+    return this.api_url + endpoint
+
   },
   
   spreedly_url: function(spreedly_environment_key){
@@ -82,7 +77,7 @@ var hmt_client_processor = {
   _submit_spreedly_transaction: function(transaction, cb){
 
     this._request({
-      url: this.url_prefix('api/shop/carts/submit'),
+      url: this.url_prefix('shop/carts/submit'),
       type: 'POST',
       data: transaction,
       form_encoded: true,
@@ -101,16 +96,26 @@ var hmt_client_processor = {
     var me = this
     
     me._get_fullsteam_auth_key(function(err, authentication_key_res){
+
+      var auth_key = null
       
-      var fullsteam_authentication_key = authentication_key_res.status == 'ok' ? authentication_key_res.authenticationKey : null
+      if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
+        auth_key = authentication_key_res.authenticationKey
       
       // TODO validate the key
       
-      me._get_fullsteam_token(card, fullsteam_authentication_key, function(err, token_res){
+      me._get_fullsteam_token(card, transaction, auth_key, function(err, token_res){
+        
+        // TODO validate the token
+        
+        if(!token_res || !token_res.isSuccessful || !token_res.token)
+          return hmt_client_processor._handle_fullsteam_error(token_res, cb)
+
+        transaction.payment_token = token_res.token
       
-        me._submit_fullsteam_transaction(card, transaction, fullsteam_authentication_key, function(err, transaction_res){
+        me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
       
-      
+          hmt_client_processor._respond(err, transaction_res, cb)
       
         })
       
@@ -123,7 +128,7 @@ var hmt_client_processor = {
   _get_fullsteam_auth_key: function(cb){
     
     this._request({
-      url: this.url_prefix('api/shop/processors/get_authentication_key'),
+      url: this.url_prefix('shop/processors/get_authentication_key'),
       cb: function(err, res){
         hmt_client_processor._respond(err, res, cb)
       }
@@ -131,74 +136,122 @@ var hmt_client_processor = {
     
   },
 
-  _get_fullsteam_token: function(card, fullsteam_authentication_key, cb){
+  _get_fullsteam_token: function(card, transaction, auth_key, cb){
+
+    if(
+      !card || 
+      !card.payment_method || 
+      !card.payment_method.credit_card || 
+      !card.payment_method.credit_card.number || 
+      !card.payment_method.credit_card.month || 
+      !card.payment_method.credit_card.year || 
+      !card.payment_method.credit_card.full_name || 
+      !card.payment_method.credit_card.verification_value
+    ){
+      cb(true, 'Missing required card inputs')
+      return
+    }
     
     var data = {
       "clearTextCardData": {
-        "cardNumber": "string",
-        "cvv": "string",
-        "expirationMonth": 0,
-        "expirationYear": 0,
+        "cardNumber": card.payment_method.credit_card.number.replace(/\s/g, ''),
+        "cvv": card.payment_method.credit_card.verification_value,
+        "expirationMonth": card.payment_method.credit_card.month,
+        "expirationYear": card.payment_method.credit_card.year,
         "billingInformation": {
-          "nameOnAccount": "string",
-          "businessName": "string",
-          "firstName": "string",
-          "lastName": "string",
-          "middleName": "string",
-          "address1": "string",
-          "address2": "string",
-          "address3": "string",
-          "city": "string",
-          "state": "string",
-          "zip": "string",
-          "country": "string",
-          "phone": "string",
-          "phoneCountryCode": 0,
-          "email": "string"
+          "nameOnAccount": card.payment_method.credit_card.full_name,
+        //   "businessName": "string",
+        //   "firstName": "string",
+        //   "lastName": "string",
+        //   "middleName": "string",
+        //   "address1": "string",
+        //   "address2": "string",
+        //   "address3": "string",
+        //   "city": "string",
+        //   "state": "string",
+          "zip": transaction.zip || null,
+        //   "country": "string",
+        //   "phone": "string",
+        //   "phoneCountryCode": 0,
+        //   "email": "string"
         }
       },
-      "cardEntryContext": 0,
-      "avsOptions": {
-        "action": 1,
-        "codes": [
-          "string"
-        ]
-      },
-      "cvvOptions": {
-        "action": 1,
-        "codes": [
-          "string"
-        ]
-      },
-      "performAccountVerification": true,
-      "customerId": "string"
+      "cardEntryContext": 5,
+      // "avsOptions": {
+      //   "action": 1,
+      //   "codes": [
+      //     "string"
+      //   ]
+      // },
+      // "cvvOptions": {
+      //   "action": 1,
+      //   "codes": [
+      //     "string"
+      //   ]
+      // },
+      "performAccountVerification": false
+      // "customerId": "string"
     }
     
-    
+    this._request({
+      url: this.fullsteam_url() + 'api/token/card/clearText/create',
+      type: 'POST',
+      cors: true,
+      crossdomain: true,
+      data: data,
+      json: true,
+      withCredentials: false,
+      auth_key: auth_key,
+      cb: function(err, res){
+        hmt_client_processor._respond(err, res, cb)
+      }      
+    })
+
   },
   
-  _submit_fullsteam_transaction: function(card, transaction, fullsteam_authentication_key, cb){
+  _submit_fullsteam_transaction: function(transaction, cb){
     
-    
+    this._request({
+      url: this.url_prefix('shop/carts/submit'),
+      type: 'POST',
+      data: transaction,
+      form_encoded: true,
+      withCredentials: true,
+      cb: function(err, json){
+        hmt_client_processor._respond(err, json, cb)
+      }
+    })
     
   },
   
   _request: function(opts){
     
-    console.warn('_request', opts.url)
+    // console.warn('_request', opts.url)
     
+    // default
     var headers = {}
     
+    if(opts.json)
+      headers['content-type'] = 'application/json;charset=UTF-8'
+    
     if(opts.form_encoded){
-      headers = { 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+      headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
       opts.data = hmt_client_processor._serialize(opts.data)
     }
-    
+
+    if(opts.auth_key)
+      headers['authenticationKey'] = opts.auth_key
+
+    // console.log('headers', headers)
+      
     axios({
       method: opts.type || 'GET',
       url: opts.url,
+      mode: 'no-cors',
+      credentials: 'same-origin',
       headers: headers,
       withCredentials: opts.withCredentials || false,
+      crossdomain: opts.crossdomain || false,
       data: opts.data
     }).then(function(response){
       
@@ -212,35 +265,25 @@ var hmt_client_processor = {
       
     });
     
-    // var xhr = new XMLHttpRequest();
-    // xhr.onreadystatechange = function () {
-    // 
-    // 	if (xhr.readyState !== 4)
-    //     return;
-    // 
-    //   if (xhr.status >= 200 && xhr.status < 300)
-    // 		opts.cb(null, JSON.parse(xhr.responseText));
-    // 	else
-    // 		opts.cb(xhr);
-    // 
-    // };
-    // 
-    // xhr.open(opts.type || 'GET', opts.url);
-    // 
-    // var data = opts.data || null
-    // 
-    // if(data)
-    //   xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    // 
-    // var d = hmt_client_processor._serialize(data);
-    // 
-    // xhr.send(d)
+  },
+  
+  _handle_fullsteam_error: function(res, cb){
+    
+    var msg = ''
+    
+    if(res.responseDetails){
+      for(key in res.responseDetails){
+        msg += res.responseDetails[key].message+"\n\n"
+      }
+    }
+    
+    return hmt_client_processor._throw_error(true, {msg: msg}, cb)
     
   },
   
   _respond: function(err, res, cb){
     
-    console.warn('_respond', err, res)
+    // console.warn('_respond', err, res)
     
     if(err || !res || !res.data || res.status == 'error'){
       hmt_client_processor._throw_error(err, res, cb)
@@ -254,7 +297,7 @@ var hmt_client_processor = {
   
   _throw_error: function(err, res, cb){
     
-    console.warn('_throw_error')
+    // console.warn('_throw_error')
     
     if(!err && res.msg)
       err = res.msg

@@ -114,7 +114,7 @@ var hmt_client_processor = {
         transaction.payment_token = token_res.token
       
         me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
-      
+          
           hmt_client_processor._respond(err, transaction_res, cb)
       
         })

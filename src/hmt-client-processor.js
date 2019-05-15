@@ -2,6 +2,8 @@
 var hmt_client_processor = {
 
   api_url: '', // set when the script is loaded
+  
+  app_type: '', // set prior to submit (online | box)
 
   url_prefix: function(endpoint){
 
@@ -137,6 +139,9 @@ var hmt_client_processor = {
   },
 
   _get_fullsteam_token: function(card, transaction, auth_key, cb){
+    
+    // console.log('card', card)
+    // console.log('transaction', transaction)
 
     if(
       !card || 
@@ -160,36 +165,51 @@ var hmt_client_processor = {
         "expirationYear": card.payment_method.credit_card.year,
         "billingInformation": {
           "nameOnAccount": card.payment_method.credit_card.full_name,
-        //   "businessName": "string",
-        //   "firstName": "string",
-        //   "lastName": "string",
-        //   "middleName": "string",
-        //   "address1": "string",
-        //   "address2": "string",
-        //   "address3": "string",
-        //   "city": "string",
-        //   "state": "string",
+          // "businessName": "string",
+          "firstName": transaction.f_name || null,
+          "lastName": transaction.l_name || null,
+          // "middleName": "string",
+          "address1": transaction.address1 || null,
+          "address2": transaction.address2 || null,
+          // "address3": "string",
+          "city": transaction.state || null,
+          "state": transaction.state || null,
           "zip": transaction.zip || null,
         //   "country": "string",
-        //   "phone": "string",
+          "phone": transaction.phone || null,
         //   "phoneCountryCode": 0,
-        //   "email": "string"
+          "email": transaction.email || null,
         }
       },
-      "cardEntryContext": 5,
-      // "avsOptions": {
-      //   "action": 1,
-      //   "codes": [
-      //     "string"
-      //   ]
-      // },
+      "cardEntryContext": this.app_type == 'box' ? 1 : 5,
+      "avsOptions": {
+        "action": 1,
+        "codes": [
+          'B',
+  				'C',
+  				'D',
+  				'F',
+  				'G',
+  				'I',
+  				'J',
+  				'K',
+  				'M',
+  				'P',
+  				'S',
+  				'T',
+  				'U',
+  				'W',
+  				'Y',
+  				'Z'
+        ]
+      },
       // "cvvOptions": {
       //   "action": 1,
       //   "codes": [
-      //     "string"
+      //     ""
       //   ]
-      // },
-      "performAccountVerification": false
+      // }
+      // "performAccountVerification": false
       // "customerId": "string"
     }
     
@@ -225,9 +245,7 @@ var hmt_client_processor = {
   },
   
   _request: function(opts){
-    
-    // console.warn('_request', opts.url)
-    
+
     // default
     var headers = {}
     
@@ -242,8 +260,6 @@ var hmt_client_processor = {
     if(opts.auth_key)
       headers['authenticationKey'] = opts.auth_key
 
-    // console.log('headers', headers)
-      
     axios({
       method: opts.type || 'GET',
       url: opts.url,
@@ -271,10 +287,9 @@ var hmt_client_processor = {
     
     var msg = ''
     
-    if(res.responseDetails){
-      for(key in res.responseDetails){
+    if(res && res.responseDetails){
+      for(key in res.responseDetails)
         msg += res.responseDetails[key].message+"\n\n"
-      }
     }
     
     return hmt_client_processor._throw_error(true, {msg: msg}, cb)

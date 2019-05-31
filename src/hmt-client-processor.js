@@ -5,6 +5,8 @@ var hmt_client_processor = {
   
   app_type: '', // set prior to submit (online | box)
 
+  current_processor: '',
+
   url_prefix: function(endpoint){
 
     return this.api_url + endpoint
@@ -38,15 +40,15 @@ var hmt_client_processor = {
   
   /* SPREEDLY */
   
-  _submit_spreedly: function(card, transaction, cb){
-    
+  _submit_spreedly: function(card, transaction, cb){    
+
     var me = this
+    me.current_processor = 'spreedly'
     
     me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
       
       if(err) {
-        if(cb)
-          cb(err)
+        hmt_client_processor._throw_error(err, token_res, cb)
         return;
       }
 
@@ -96,6 +98,7 @@ var hmt_client_processor = {
   _submit_fullsteam: function(card, transaction, cb){
     
     var me = this
+    me.current_processor = 'fullsteam'
     
     me._get_fullsteam_auth_key(function(err, authentication_key_res){
 
@@ -140,9 +143,6 @@ var hmt_client_processor = {
 
   _get_fullsteam_token: function(card, transaction, auth_key, cb){
     
-    // console.log('card', card)
-    // console.log('transaction', transaction)
-
     if(
       !card || 
       !card.payment_method || 
@@ -209,7 +209,7 @@ var hmt_client_processor = {
       //     ""
       //   ]
       // }
-      // "performAccountVerification": false
+      "performAccountVerification": true
       // "customerId": "string"
     }
     
@@ -274,13 +274,46 @@ var hmt_client_processor = {
       if(opts.cb)
         opts.cb(null, response)
       
-    }).catch(function(error){
-      
+    }).catch(function(error, res){
+
+      var error_msg = hmt_client_processor._format_error(error)
+      if(!res)
+        res = {}
+
+      res.msg = error_msg
+
       if(opts.cb)
-        opts.cb(error)
+        opts.cb(error, res)
       
     });
     
+  },
+
+  _format_error: function(error) {
+    if(this.current_processor == 'spreedly'){
+      return this._format_spreedly_error(error)
+    } else {
+      return this._format_fullsteam_error(error)
+    }
+  },
+
+  _format_spreedly_error: function(error){
+    var res = null;
+    if(error.response && error.response.data && error.response.data.errors) {
+      var error_msg = 'Processing Error:<br>';
+      for(var i =0; i < error.response.data.errors.length; i++ ){
+        var err = error.response.data.errors[i]
+        error_msg += err.message ? '- '+err.message+"<br>" : ''
+      }
+      return error_msg
+    }
+
+    return 'Unkown error'
+
+  },
+
+  _format_fullsteam_error: function(error){
+    return error && error.msg ? error.msg : 'Unkown error'
   },
   
   _handle_fullsteam_error: function(res, cb){
@@ -298,8 +331,6 @@ var hmt_client_processor = {
   
   _respond: function(err, res, cb){
     
-    // console.warn('_respond', err, res)
-    
     if(err || !res || !res.data || res.status == 'error'){
       hmt_client_processor._throw_error(err, res, cb)
       return
@@ -311,9 +342,7 @@ var hmt_client_processor = {
   },
   
   _throw_error: function(err, res, cb){
-    
-    // console.warn('_throw_error')
-    
+        
     if(!err && res.msg)
       err = res.msg
     

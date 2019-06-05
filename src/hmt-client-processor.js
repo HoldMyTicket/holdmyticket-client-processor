@@ -26,9 +26,9 @@ var hmt_client_processor = {
   },
   
   submit_transaction: function(card, transaction, cb){
-    
-    // determine the method to use spreedly | fullsteam
-    
+    this._remove_card_data()
+    // determine the method to use spreedly | fullsteam    
+
     if(transaction.processor_method == 'spreedly')
       this._submit_spreedly(card, transaction, cb)
     else if(transaction.processor_method == 'fullsteam')
@@ -46,7 +46,7 @@ var hmt_client_processor = {
     me.current_processor = 'spreedly'
     
     me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
-      
+
       if(err) {
         hmt_client_processor._throw_error(err, token_res, cb)
         return;
@@ -56,11 +56,17 @@ var hmt_client_processor = {
       
       me._submit_spreedly_transaction(transaction, function(err, transaction_res){
         
+        if(!err && transaction_res.ticket_key)
+          me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
+
         hmt_client_processor._respond(err, transaction_res, cb)
         
       })
       
     })
+
+    if(transaction.cc_retain && transaction.cc_retain == 'y')
+        me._save_card(card, transaction, 'fullsteam')
     
   },
   
@@ -128,6 +134,139 @@ var hmt_client_processor = {
 
     })
 
+    if(transaction.cc_retain && transaction.cc_retain == 'y')
+      me._save_card(card, transaction, 'spreedly')
+
+  },
+
+  _save_card: function(card, transaction, processor, env_key){
+    var me = this
+
+    console.log("SAVE CARD", card, transaction)
+
+    if(!card || !card.payment_method || !card.payment_method.credit_card)
+      return
+
+    var card_data = card.payment_method.credit_card
+
+    env_key = env_key || ''
+
+    if(processor == 'spreedly'){
+      me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
+        if(err) {
+          return;
+        }
+
+        me._save_card_to_webuser({card: card_data, token: token_res.payment_method.token, processor: 'spreedly'});
+        
+      })
+    }
+
+    if(processor == 'fullsteam'){
+      me._get_fullsteam_auth_key(function(err, authentication_key_res){
+
+      var env_key = null
+      
+      if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
+        env_key = authentication_key_res.authenticationKey
+
+        if(!env_key)
+          return
+
+        me._get_fullsteam_token(card, transaction, env_key, function(err, token_res){
+          
+          if(!token_res || !token_res.isSuccessful || !token_res.token)
+            return hmt_client_processor._handle_fullsteam_error(token_res, cb)
+        
+          me._save_card_to_webuser({card: card_data, token: token_res.token, processor: 'fullsteam'});
+        
+        })
+
+      })
+
+    }
+
+  },
+
+  _save_card_to_webuser: function(args){
+    var me = this
+
+    console.log("ARGS", args)
+
+    me._remember_card_data(args)
+
+    var card_data = me.card_data ? me._format_card_for_save(me.card_data) : null
+
+    if(me.card_ticket_key && card_data && me.card_token && me.card_processor){
+      console.log('card_data checks PASSED', card_data)
+
+      var data = {
+        ticket_key: me.card_ticket_key,
+        vault: me.card_processor,
+        token: me.card_token,
+        card_data: card_data
+      }
+
+      this._request({
+        url: me.url_prefix('public/orders/save_additional_card'),
+        type: 'POST',
+        withCredentials: false,
+        data: data,
+        form_encoded: true,
+        cb: function(err, res){
+          console.log('err,res', err, res)
+          // hmt_client_processor._respond(err, res, cb)
+        }
+      })
+    }
+
+  },
+
+  _format_card_for_save: function(card_data){
+    var me = this
+    console.log("card_data", card_data)
+    
+    if(!card_data.full_name)
+      return false
+    if(!card_data.month)
+      return false
+    if(!card_data.year)
+      return false
+    if(!card_data.number)
+      return false
+
+    return {
+      full_name : card_data.full_name,
+      last_four : me._get_last_four(card_data.number),
+      exp_month : card_data.month,
+      exp_year : card_data.year,
+    }
+  },
+
+  _get_last_four: function(cc_num){
+    return cc_num.substr(cc_num.length - 4)
+  },
+
+  _remember_card_data: function(args){
+    var me = this
+
+    if(args.card)
+      me.card_data = args.card
+    if(args.token)
+      me.card_token = args.token
+    if(args.processor)
+      me.card_processor = args.processor
+    if(args.ticket_key)
+      me.card_ticket_key = args.ticket_key
+  },
+
+  _remove_card_data: function(){
+    var me = this
+
+    delete me.card_data
+    delete me.card_token
+    delete me.processor
+    delete me.card_ticket_key
   },
   
   _get_fullsteam_auth_key: function(cb){

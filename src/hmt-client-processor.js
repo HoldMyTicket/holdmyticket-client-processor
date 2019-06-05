@@ -66,7 +66,7 @@ var hmt_client_processor = {
     })
 
     if(transaction.cc_retain && transaction.cc_retain == 'y')
-        me._save_card(card, transaction, 'fullsteam')
+        me.save_card(card, transaction, 'fullsteam')
     
   },
   
@@ -135,11 +135,11 @@ var hmt_client_processor = {
     })
 
     if(transaction.cc_retain && transaction.cc_retain == 'y')
-      me._save_card(card, transaction, 'spreedly')
+      me.save_card(card, transaction, 'spreedly')
 
   },
 
-  _save_card: function(card, transaction, processor, env_key){
+  save_card: function(card, transaction, processor, ticket_key){
     var me = this
 
     console.log("SAVE CARD", card, transaction)
@@ -149,15 +149,20 @@ var hmt_client_processor = {
 
     var card_data = card.payment_method.credit_card
 
-    env_key = env_key || ''
+    var args = {card: card_data, processor: processor}
+
+    ticket_key = ticket_key || ''
+    if(ticket_key)
+      args.ticket_key = ticket_key
 
     if(processor == 'spreedly'){
       me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
         if(err) {
           return;
         }
+        args.token = token_res.payment_method.token
 
-        me._save_card_to_webuser({card: card_data, token: token_res.payment_method.token, processor: 'spreedly'});
+        me._save_card_to_webuser(args);
         
       })
     }
@@ -176,9 +181,12 @@ var hmt_client_processor = {
         me._get_fullsteam_token(card, transaction, env_key, function(err, token_res){
           
           if(!token_res || !token_res.isSuccessful || !token_res.token)
-            return hmt_client_processor._handle_fullsteam_error(token_res, cb)
+            return
+
+          args.token = token_res.token;
+          console.log('made it this far')
         
-          me._save_card_to_webuser({card: card_data, token: token_res.token, processor: 'fullsteam'});
+          me._save_card_to_webuser(args);
         
         })
 
@@ -281,7 +289,7 @@ var hmt_client_processor = {
   },
 
   _get_fullsteam_token: function(card, transaction, auth_key, cb){
-    
+    console.log('TRANSACTION', transaction)
     if(
       !card || 
       !card.payment_method || 

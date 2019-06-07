@@ -125,6 +125,10 @@ var hmt_client_processor = {
         transaction.payment_token = token_res.token
       
         me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
+          console.log('submit_fullsteam res', err, transaction_res)
+
+          if(!err && transaction_res.ticket_key)
+            me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
           
           hmt_client_processor._respond(err, transaction_res, cb)
       
@@ -134,15 +138,29 @@ var hmt_client_processor = {
 
     })
 
-    if(transaction.cc_retain && transaction.cc_retain == 'y')
+    if(transaction.cc_retain && transaction.cc_retain == 'y'){
+      if(!transaction.spreedly_environment_key){
+        transaction.spreedly_environment_key = me._get_spreedly_env_key()
+      }
       me.save_card(card, transaction, 'spreedly')
+    }
 
+  },
+
+  _get_spreedly_env_key: function(){
+    if(this.spreedly_environment_key)
+      return this.spreedly_environment_key
+
+    if(config && config.spreedly_environment_key)
+      return config.spreedly_environment_key
+
+    return ''
   },
 
   save_card: function(card, transaction, processor, ticket_key){
     var me = this
 
-    console.log("SAVE CARD", card, transaction)
+    console.log("SAVE CARD", card, transaction, ticket_key)
 
     if(!card || !card.payment_method || !card.payment_method.credit_card)
       return
@@ -157,10 +175,12 @@ var hmt_client_processor = {
 
     if(processor == 'spreedly'){
       me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
+        console.log('spreedly token result', err, token_res)
         if(err) {
           return;
         }
-        args.token = token_res.payment_method.token
+        if(token_res.transaction && token_res.transaction.payment_method && token_res.transaction.payment_method.token)
+          args.token = token_res.transaction.payment_method.token
 
         me._save_card_to_webuser(args);
         
@@ -184,7 +204,6 @@ var hmt_client_processor = {
             return
 
           args.token = token_res.token;
-          console.log('made it this far')
         
           me._save_card_to_webuser(args);
         

@@ -348,33 +348,34 @@ var hmt_client_processor = {
         }
       },
       "cardEntryContext": this.app_type == 'box' ? 1 : 5,
-      "avsOptions": {
-        "action": 1,
-        "codes": [
-          'B',
-  				'C',
-  				'D',
-  				'F',
-  				'G',
-  				'I',
-  				'J',
-  				'K',
-  				'M',
-  				'P',
-  				'S',
-  				'T',
-  				'U',
-  				'W',
-  				'Y',
-  				'Z'
-        ]
-      },
-      // "cvvOptions": {
+      // "avsOptions": { // these are sent over during get auth key
       //   "action": 1,
       //   "codes": [
-      //     ""
+      //     'B',
+  		// 		'C',
+  		// 		'D',
+  		// 		'F',
+  		// 		'G',
+  		// 		'I',
+  		// 		'J',
+  		// 		'K',
+  		// 		'M',
+  		// 		'P',
+  		// 		'S',
+  		// 		'T',
+  		// 		'U',
+  		// 		'W',
+  		// 		'Y',
+  		// 		'Z'
       //   ]
-      // }
+      // },
+      // "cvvOptions": { // these are sent over during get auth key
+      //   "action": 1,
+      //   "codes": [
+      //     "M",
+      //     "P"
+      //   ]
+      // },
       "performAccountVerification": true
       // "customerId": "string"
     }

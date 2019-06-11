@@ -1,3 +1,4 @@
+import axios from 'axios';
 
 var hmt_client_processor = {
 
@@ -538,3 +539,5 @@ var hmt_client_processor = {
   }
   
 }
+
+export default hmt_client_processor;

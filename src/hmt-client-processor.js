@@ -216,6 +216,75 @@ var hmt_client_processor = {
 
   },
 
+  webuser_save_card: function(card, data, webuser_id, cb) {
+		var me = this;
+
+		me._get_spreedly_token(card, data.spreedly_environment_key, function(err, token_res) {
+			console.log('spreedly token result', err, token_res);
+			if (err) {
+				return;
+			}
+
+			var request_data = {
+				webuser_id: webuser_id,
+				token: token_res.transaction.payment_method.token,
+				vault: 'spreedly'
+			};
+
+			me._request({
+				url: me.url_prefix('public/users/save_credit_card'),
+				type: 'POST',
+				withCredentials: false,
+				data: request_data,
+				form_encoded: true,
+				cb: function(err, res) {
+					console.log('err,res', err, res);
+
+					me._get_fullsteam_auth_key(function(err, authentication_key_res) {
+						var env_key = null;
+
+						if (
+							authentication_key_res &&
+							authentication_key_res.status &&
+							authentication_key_res.status == 'ok' &&
+							authentication_key_res.authenticationKey
+						)
+							env_key = authentication_key_res.authenticationKey;
+
+						if (!env_key) return;
+
+						me._get_fullsteam_token(card, data, env_key, function(err, token_res) {
+							if (!token_res || !token_res.isSuccessful || !token_res.token) return;
+
+							var card_data = card.payment_method.credit_card
+								? me._format_card_for_save(card.payment_method.credit_card)
+								: null;
+
+							var data = {
+								webuser_id: webuser_id,
+								vault: 'fullsteam',
+								token: token_res.token,
+								card_data: card_data
+							};
+
+							me._request({
+								url: me.url_prefix('public/users/save_additional_card'),
+								type: 'POST',
+								withCredentials: false,
+								data: data,
+								form_encoded: true,
+								cb: function(err, res) {
+									console.log('err,res', err, res);
+									hmt_client_processor._respond(err, res, cb);
+								}
+							});
+						});
+					});
+				}
+			});
+		});
+	},
+
   _save_card_to_webuser: function(args){
     var me = this
 

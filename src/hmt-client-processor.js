@@ -114,38 +114,49 @@ var hmt_client_processor = {
     
     var me = this
     me.current_processor = 'fullsteam'
+
+    if (transaction.payment_token) {
+
+      me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
+        console.log('submit_fullsteam res', err, transaction_res)
+        
+        hmt_client_processor._respond(err, transaction_res, cb)
     
-    me._get_fullsteam_auth_key(function(err, authentication_key_res){
-
-      var auth_key = null
-      
-      if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
-        auth_key = authentication_key_res.authenticationKey
-      
-      // TODO validate the key
-      
-      me._get_fullsteam_token(card, transaction, auth_key, function(err, token_res){
-        
-        // TODO validate the token
-        
-        if(!token_res || !token_res.isSuccessful || !token_res.token)
-          return hmt_client_processor._handle_fullsteam_error(token_res, cb)
-
-        transaction.payment_token = token_res.token
-      
-        me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
-          console.log('submit_fullsteam res', err, transaction_res)
-
-          if(!err && transaction_res.ticket_key)
-            me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
-          
-          hmt_client_processor._respond(err, transaction_res, cb)
-      
-        })
-      
       })
 
-    })
+    } else {
+      me._get_fullsteam_auth_key(function(err, authentication_key_res){
+
+        var auth_key = null
+        
+        if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
+          auth_key = authentication_key_res.authenticationKey
+        
+        // TODO validate the key
+        
+        me._get_fullsteam_token(card, transaction, auth_key, function(err, token_res){
+          
+          // TODO validate the token
+          
+          if(!token_res || !token_res.isSuccessful || !token_res.token)
+            return hmt_client_processor._handle_fullsteam_error(token_res, cb)
+  
+          transaction.payment_token = token_res.token
+        
+          me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
+            console.log('submit_fullsteam res', err, transaction_res)
+  
+            if(!err && transaction_res.ticket_key)
+              me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
+            
+            hmt_client_processor._respond(err, transaction_res, cb)
+        
+          })
+        
+        })
+  
+      })
+    }
 
     if(transaction.cc_retain && transaction.cc_retain == 'y'){
       if(!transaction.spreedly_environment_key){

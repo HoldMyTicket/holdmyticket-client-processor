@@ -427,7 +427,7 @@ var hmt_client_processor = {
           "address1": transaction.address1 || null,
           "address2": transaction.address2 || null,
           // "address3": "string",
-          "city": transaction.state || null,
+          "city": transaction.city || null,
           "state": transaction.state || null,
           "zip": transaction.zip || null,
         //   "country": "string",

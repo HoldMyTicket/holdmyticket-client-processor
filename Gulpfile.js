@@ -45,7 +45,7 @@ function startDevServer(){
   
   util.log(util.colors.green('Opening browser on port: http://localhost:8383.'));
 
-  childProcess.exec('php -S localhost:8383 -t src', function(stdout, stderror) {
+  childProcess.exec('php -S localhost:8383 -t dist', function(stdout, stderror) {
     
   })
   

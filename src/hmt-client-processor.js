@@ -257,7 +257,6 @@ var hmt_client_processor = {
 				data: request_data,
 				form_encoded: true,
 				cb: function(err, res) {
-					console.log('err,res', err, res);
 
 					me._get_fullsteam_auth_key(function(err, authentication_key_res) {
 						var env_key = null;
@@ -271,6 +270,10 @@ var hmt_client_processor = {
 							env_key = authentication_key_res.authenticationKey;
 
 						if (!env_key) return;
+
+            if(!data.zip && card.payment_method.credit_card.zip)
+              data.zip = card.payment_method.credit_card.zip
+
 
 						me._get_fullsteam_token(card, data, env_key, function(err, token_res) {
 							if (!token_res || !token_res.isSuccessful || !token_res.token) return;
@@ -437,36 +440,7 @@ var hmt_client_processor = {
         }
       },
       "cardEntryContext": this.app_type == 'box' ? 1 : 5,
-      // "avsOptions": { // these are sent over during get auth key
-      //   "action": 1,
-      //   "codes": [
-      //     'B',
-  		// 		'C',
-  		// 		'D',
-  		// 		'F',
-  		// 		'G',
-  		// 		'I',
-  		// 		'J',
-  		// 		'K',
-  		// 		'M',
-  		// 		'P',
-  		// 		'S',
-  		// 		'T',
-  		// 		'U',
-  		// 		'W',
-  		// 		'Y',
-  		// 		'Z'
-      //   ]
-      // },
-      // "cvvOptions": { // these are sent over during get auth key
-      //   "action": 1,
-      //   "codes": [
-      //     "M",
-      //     "P"
-      //   ]
-      // },
       "performAccountVerification": true
-      // "customerId": "string"
     }
     
     this._request({

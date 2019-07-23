@@ -257,6 +257,8 @@ var hmt_client_processor = {
 				data: request_data,
 				form_encoded: true,
 				cb: function(err, res) {
+          if(!res || !res.status || res.status != 'ok')
+            return hmt_client_processor._respond(err, res, cb);
 
 					me._get_fullsteam_auth_key(function(err, authentication_key_res) {
 						var env_key = null;

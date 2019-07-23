@@ -257,8 +257,12 @@ var hmt_client_processor = {
 				data: request_data,
 				form_encoded: true,
 				cb: function(err, res) {
-          if(!res || !res.status || res.status != 'ok')
+          if(res && res.status == '200' && res.statusText == 'OK')
+            res = res.data
+
+          if(!res || !res.status || res.status != 'ok'){
             return hmt_client_processor._respond(err, res, cb);
+          }
 
 					me._get_fullsteam_auth_key(function(err, authentication_key_res) {
 						var env_key = null;
@@ -270,6 +274,7 @@ var hmt_client_processor = {
 							authentication_key_res.authenticationKey
 						)
 							env_key = authentication_key_res.authenticationKey;
+
 
 						if (!env_key) return;
 

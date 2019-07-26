@@ -282,7 +282,7 @@ var hmt_client_processor = {
 
 
 						me._get_fullsteam_token(card, data, env_key, function(err, token_res) {
-							if (!token_res || !token_res.isSuccessful || !token_res.token) return;
+							if (!token_res || !token_res.isSuccessful || !token_res.token) return hmt_client_processor._respond(err, token_res, cb);
 
 							var card_data = card.payment_method.credit_card
 								? me._format_card_for_save(card.payment_method.credit_card)

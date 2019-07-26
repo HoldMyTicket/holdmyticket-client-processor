@@ -289,7 +289,6 @@ var hmt_client_processor = {
 								: null;
 
 							var data = {
-								webuser_id: webuser_id,
 								vault: 'fullsteam',
 								token: token_res.token,
 								card_data: card_data

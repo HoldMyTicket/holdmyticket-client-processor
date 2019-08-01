@@ -3,6 +3,8 @@ import axios from 'axios';
 var hmt_client_processor = {
 
   api_url: '', // set when the script is loaded
+
+  env: '', // set when the script is loaded
   
   app_type: '', // set prior to submit (online | box)
 
@@ -22,7 +24,7 @@ var hmt_client_processor = {
   
   fullsteam_url: function(){
 
-    return 'https://api-ext.fullsteampay.net/'
+    return 'https://api'+(this.env == 'dev' ? '-ext' : '')+'.fullsteampay.net/'
 
   },
   

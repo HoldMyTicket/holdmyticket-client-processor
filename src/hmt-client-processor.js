@@ -24,7 +24,7 @@ var hmt_client_processor = {
   
   fullsteam_url: function(){
 
-    return 'https://api'+(this.env == 'dev' ? '-ext' : '')+'.fullsteampay.net/'
+    return 'https://api'+(this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? '-ext' : '')+'.fullsteampay.net/'
 
   },
   

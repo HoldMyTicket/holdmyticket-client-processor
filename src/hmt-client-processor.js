@@ -235,7 +235,7 @@ var hmt_client_processor = {
 
   },
 
-  webuser_save_card: function(card, data, cb) {
+  webuser_save_card: function(card, data, webuser_id, cb) {
 		var me = this;
 
 		me._get_spreedly_token(card, data.spreedly_environment_key, function(err, token_res) {
@@ -245,8 +245,9 @@ var hmt_client_processor = {
 			}
 
 			var request_data = {
+        webuser_id: webuser_id,
 				token: token_res.transaction.payment_method.token,
-				vault: 'spreedly'
+        vault: 'spreedly'
 			};
 
 			me._request({
@@ -289,6 +290,7 @@ var hmt_client_processor = {
 								: null;
 
 							var data = {
+                webuser_id: webuser_id,
 								vault: 'fullsteam',
 								token: token_res.token,
 								card_data: card_data

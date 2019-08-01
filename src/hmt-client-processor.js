@@ -50,9 +50,9 @@ var hmt_client_processor = {
 
     if (transaction.payment_token) {
       me._submit_spreedly_transaction(transaction, function(err, transaction_res) {
-				// if (!err && transaction_res.ticket_key) me._save_card_to_webuser({ ticket_key: transaction_res.ticket_key });
 
-				hmt_client_processor._respond(err, transaction_res, cb);
+        hmt_client_processor._respond(err, transaction_res, cb);
+        
 			});
     } else {
       me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
@@ -120,7 +120,6 @@ var hmt_client_processor = {
     if (transaction.payment_token) {
 
       me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
-        console.log('submit_fullsteam res', err, transaction_res)
         
         hmt_client_processor._respond(err, transaction_res, cb)
     

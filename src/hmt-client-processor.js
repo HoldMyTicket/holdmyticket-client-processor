@@ -10,6 +10,8 @@ var hmt_client_processor = {
 
   current_processor: '',
 
+  isHmtMobile: false,
+
   url_prefix: function(endpoint){
 
     return this.api_url + endpoint
@@ -249,6 +251,7 @@ var hmt_client_processor = {
 		me._get_spreedly_token(card, data.spreedly_environment_key, function(err, token_res) {
 			console.log('spreedly token result', err, token_res);
 			if (err) {
+				hmt_client_processor._respond(err, token_res, cb);
 				return;
 			}
 
@@ -490,6 +493,7 @@ var hmt_client_processor = {
   },
   
   _request: function(opts){
+    var me = this;
 
     // default
     var headers = {}
@@ -515,6 +519,11 @@ var hmt_client_processor = {
       crossdomain: opts.crossdomain || false,
       data: opts.data
     }).then(function(response){
+      // react native seems to have a bug where the statusText comes through as undefined
+      // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
+      if (me.isHmtMobile && response.status == 200 && !response.statusText) {
+        response.statusText = 'OK';
+      }
       
       if(opts.cb)
         opts.cb(null, response)

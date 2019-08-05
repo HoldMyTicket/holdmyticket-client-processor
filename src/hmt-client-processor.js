@@ -70,9 +70,12 @@ var hmt_client_processor = {
         
         me._submit_spreedly_transaction(transaction, function(err, transaction_res){
           
+          if(transaction.ticket_index)
+            transaction_res.ticket_index = transaction.ticket_index
+          
           if(!err && transaction_res.ticket_key)
             me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
-  
+
           hmt_client_processor._respond(err, transaction_res, cb)
           
         })
@@ -93,8 +96,6 @@ var hmt_client_processor = {
       withCredentials: false,
       data: card,
       cb: function(err, res){
-
-        console.log('_GET_SPREEDLY_TOKEN res: ', res)
         hmt_client_processor._respond(err, res, cb)
       }
     })
@@ -102,7 +103,7 @@ var hmt_client_processor = {
   },
   
   _submit_spreedly_transaction: function(transaction, cb){
-console.log('SUBMITTING TRANSACTION: ', transaction)
+
     this._request({
       url: this.url('shop/carts/submit', true),
       type: 'POST',
@@ -110,15 +111,6 @@ console.log('SUBMITTING TRANSACTION: ', transaction)
       form_encoded: true,
       withCredentials: true,
       cb: function(err, json){
-
-        console.log('submit spreedly res: ', json)
-        if(err)
-          console.log('submit spreedly ERR!!: ', err)
-
-        if(transaction.ticket_index)
-          json.ticket_index = transaction.ticket_index
-        
-        console.log('JSON right before _respond: ', json)
         hmt_client_processor._respond(err, json, cb)
       }
     })
@@ -595,24 +587,8 @@ console.log('SUBMITTING TRANSACTION: ', transaction)
   
   _respond: function(err, res, cb){
 
-    console.log('_REPSOND res: ', res)
     
     if(err || !res || res.status == 'error'){
-
-      console.log('RESPOND HAS SOME ERROR?')
-
-      if(err){
-        console.error('ERROR: ', err)
-      }
-
-      if(!res){
-        console.error('!RES', res)
-      }
-
-      if(res.status == 'error'){
-        console.error('RES STATUS == "error"')
-      }
-
       hmt_client_processor._throw_error(err, res, cb)
       return
     }

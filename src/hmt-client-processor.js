@@ -4,6 +4,8 @@ var hmt_client_processor = {
 
   api_url: '', // set when the script is loaded
 
+  api_url_suffix: '', // set when the script is loaded
+
   env: '', // set when the script is loaded
   
   app_type: '', // set prior to submit (online | box)
@@ -12,9 +14,9 @@ var hmt_client_processor = {
 
   isHmtMobile: false,
 
-  url_prefix: function(endpoint){
+  url: function(endpoint, use_suffix){
 
-    return this.api_url + endpoint
+    return this.api_url + endpoint + (use_suffix ? this.api_url_suffix : '')
 
   },
   
@@ -100,7 +102,7 @@ var hmt_client_processor = {
   _submit_spreedly_transaction: function(transaction, cb){
 
     this._request({
-      url: this.url_prefix('shop/carts/submit'),
+      url: this.url('shop/carts/submit', true),
       type: 'POST',
       data: transaction,
       form_encoded: true,
@@ -262,7 +264,7 @@ var hmt_client_processor = {
 			};
 
 			me._request({
-				url: me.url_prefix('public/users/save_credit_card'),
+				url: me.url('public/users/save_credit_card', false),
 				type: 'POST',
 				withCredentials: false,
 				data: request_data,
@@ -308,7 +310,7 @@ var hmt_client_processor = {
 							};
 
 							me._request({
-								url: me.url_prefix('public/users/save_additional_card'),
+								url: me.url('public/users/save_additional_card', false),
 								type: 'POST',
 								withCredentials: false,
 								data: data,
@@ -345,7 +347,7 @@ var hmt_client_processor = {
       }
 
       this._request({
-        url: me.url_prefix('public/orders/save_additional_card'),
+        url: me.url('public/orders/save_additional_card', false),
         type: 'POST',
         withCredentials: false,
         data: data,
@@ -409,7 +411,7 @@ var hmt_client_processor = {
   _get_fullsteam_auth_key: function(cb){
     
     this._request({
-      url: this.url_prefix('shop/processors/get_authentication_key'),
+      url: this.url('shop/processors/get_authentication_key', true),
       cb: function(err, res){
         hmt_client_processor._respond(err, res, cb)
       }
@@ -480,7 +482,7 @@ var hmt_client_processor = {
   _submit_fullsteam_transaction: function(transaction, cb){
     
     this._request({
-      url: this.url_prefix('shop/carts/submit'),
+      url: this.url('shop/carts/submit', true),
       type: 'POST',
       data: transaction,
       form_encoded: true,

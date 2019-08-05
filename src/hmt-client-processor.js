@@ -93,6 +93,8 @@ var hmt_client_processor = {
       withCredentials: false,
       data: card,
       cb: function(err, res){
+
+        console.log('_GET_SPREEDLY_TOKEN res: ', res)
         hmt_client_processor._respond(err, res, cb)
       }
     })
@@ -100,7 +102,7 @@ var hmt_client_processor = {
   },
   
   _submit_spreedly_transaction: function(transaction, cb){
-
+console.log('SUBMITTING TRANSACTION: ', transaction)
     this._request({
       url: this.url('shop/carts/submit', true),
       type: 'POST',
@@ -108,9 +110,15 @@ var hmt_client_processor = {
       form_encoded: true,
       withCredentials: true,
       cb: function(err, json){
+
+        console.log('submit spreedly res: ', json)
+        if(err)
+          console.log('submit spreedly ERR!!: ', err)
+
         if(transaction.ticket_index)
           json.ticket_index = transaction.ticket_index
         
+        console.log('JSON right before _respond: ', json)
         hmt_client_processor._respond(err, json, cb)
       }
     })
@@ -586,14 +594,36 @@ var hmt_client_processor = {
   },
   
   _respond: function(err, res, cb){
+
+    console.log('_REPSOND res: ', res)
     
-    if(err || !res || !res.data || res.status == 'error'){
+    if(err || !res || res.status == 'error'){
+
+      console.log('RESPOND HAS SOME ERROR?')
+
+      if(err){
+        console.error('ERROR: ', err)
+      }
+
+      if(!res){
+        console.error('!RES', res)
+      }
+
+      if(res.status == 'error'){
+        console.error('RES STATUS == "error"')
+      }
+
       hmt_client_processor._throw_error(err, res, cb)
       return
     }
 
-    if(cb)
-      cb(null, res.data)
+    if(cb){
+      if(res.data){
+        cb(null, res.data)
+      }else{
+        cb(null, res)
+      }
+    }
     
   },
   

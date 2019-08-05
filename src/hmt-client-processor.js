@@ -70,8 +70,8 @@ var hmt_client_processor = {
         
         me._submit_spreedly_transaction(transaction, function(err, transaction_res){
           
-          if(transaction.ticket_index)
-            transaction_res.ticket_index = transaction.ticket_index
+          if(transaction.cb_data)
+            transaction_res.cb_data = transaction.cb_data
           
           if(!err && transaction_res.ticket_key)
             me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
@@ -153,8 +153,8 @@ var hmt_client_processor = {
         
           me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
             
-            if(transaction.ticket_index) 
-              transaction_res.ticket_index = transaction.ticket_index
+            if(transaction.cb_data) 
+              transaction_res.cb_data = transaction.cb_data
             
             console.log('submit_fullsteam res', err, transaction_res)
   

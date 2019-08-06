@@ -69,6 +69,9 @@ var hmt_client_processor = {
         }
   
         transaction.payment_token = token_res.transaction.payment_method.token
+
+        if(transaction.payments)
+          transaction.payments = me._update_payments_token(transaction.payments, transaction.payment_token)
         
         me._submit_spreedly_transaction(transaction, function(err, transaction_res){
           
@@ -88,6 +91,16 @@ var hmt_client_processor = {
     if(transaction.cc_retain && transaction.cc_retain == 'y')
         me.save_card(card, transaction, 'fullsteam')
     
+  },
+
+  _update_payments_token(payments, payment_token){
+    //for split payments we need the token
+    for(var i =0; i < payments.length; i++){
+      var payment = payments[i]
+      if(payment.type == 'credit')
+        payments[i].payment_token = payment_token
+    }
+    return payments
   },
   
   _get_spreedly_token: function(card, spreedly_environment_key, cb){
@@ -152,6 +165,9 @@ var hmt_client_processor = {
             return hmt_client_processor._handle_fullsteam_error(token_res, cb)
   
           transaction.payment_token = token_res.token
+
+          if(transaction.payments)
+            transaction.payments = me._update_payments_token(transaction.payments, transaction.payment_token)
         
           me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
             

@@ -34,7 +34,9 @@ var hmt_client_processor = {
   
   submit_transaction: function(card, transaction, cb){
     this._remove_card_data()
-    // determine the method to use spreedly | fullsteam    
+    // determine the method to use spreedly | fullsteam   
+
+    console.log('transaction', transaction) 
 
     if(transaction.processor_method == 'spreedly')
       this._submit_spreedly(card, transaction, cb)
@@ -616,9 +618,9 @@ var hmt_client_processor = {
     
   },
   
-  _serialize: function(obj) {
+  _serialize: function(obj, prefix) {
     
-    var str = [], p, prefix;
+    var str = [], p;
     for (p in obj) {
       if (obj.hasOwnProperty(p)) {
         var k = prefix ? prefix + "[" + p + "]" : p,

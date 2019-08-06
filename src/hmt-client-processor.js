@@ -10,8 +10,6 @@ var hmt_client_processor = {
   
   app_type: '', // set prior to submit (online | box)
 
-  current_processor: '',
-
   isHmtMobile: false,
 
   url: function(endpoint, use_suffix){
@@ -52,7 +50,6 @@ var hmt_client_processor = {
   _submit_spreedly: function(card, transaction, cb){    
 
     var me = this
-    me.current_processor = 'spreedly'
 
     if (transaction.payment_token) {
       me._submit_spreedly_transaction(transaction, function(err, transaction_res) {
@@ -143,7 +140,6 @@ var hmt_client_processor = {
   _submit_fullsteam: function(card, transaction, cb){
     
     var me = this
-    me.current_processor = 'fullsteam'
 
     if (transaction.payment_token) {
 
@@ -563,8 +559,7 @@ var hmt_client_processor = {
         opts.cb(null, response)
       
     }).catch(function(error, res){
-
-      var error_msg = hmt_client_processor._format_error(error)
+      var error_msg = hmt_client_processor._format_error(error, opts.url)
       if(!res)
         res = {}
       
@@ -580,8 +575,8 @@ var hmt_client_processor = {
     
   },
 
-  _format_error: function(error) {
-    if(this.current_processor == 'spreedly'){
+  _format_error: function(error, processor_url) {
+    if(processor_url.indexOf('core.spreedly.com') != -1){
       return this._format_spreedly_error(error)
     } else {
       return this._format_fullsteam_error(error)

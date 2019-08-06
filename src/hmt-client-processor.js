@@ -57,6 +57,9 @@ var hmt_client_processor = {
     if (transaction.payment_token) {
       me._submit_spreedly_transaction(transaction, function(err, transaction_res) {
 
+        if(transaction.cb_data)
+          transaction_res.cb_data = transaction.cb_data
+        
         hmt_client_processor._respond(err, transaction_res, cb);
         
       });
@@ -64,7 +67,10 @@ var hmt_client_processor = {
       me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
 
         if(err) {
-          hmt_client_processor._throw_error(err, token_res, cb)
+          if(transaction.cb_data)
+            token_res.cb_data = transaction.cb_data
+
+          hmt_client_processor._respond(err, token_res, cb)
           return;
         }
   
@@ -125,8 +131,8 @@ var hmt_client_processor = {
       data: transaction,
       form_encoded: true,
       withCredentials: true,
-      cb: function(err, json){
-        hmt_client_processor._respond(err, json, cb)
+      cb: function(err, res){
+        hmt_client_processor._respond(err, res, cb)
       }
     })
     
@@ -143,6 +149,9 @@ var hmt_client_processor = {
 
       me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
         
+        if(transaction.cb_data)
+          transaction_res.cb_data = transaction.cb_data
+
         hmt_client_processor._respond(err, transaction_res, cb)
     
       })
@@ -161,8 +170,13 @@ var hmt_client_processor = {
           
           // TODO validate the token
           
-          if(!token_res || !token_res.isSuccessful || !token_res.token)
-            return hmt_client_processor._handle_fullsteam_error(token_res, cb)
+          if(!token_res || !token_res.isSuccessful || !token_res.token){
+          
+            if(transaction.cb_data)
+              token_res.cb_data = transaction.cb_data
+
+            return hmt_client_processor._respond(err, token_res, cb)
+          }
   
           transaction.payment_token = token_res.token
 
@@ -553,6 +567,9 @@ var hmt_client_processor = {
       var error_msg = hmt_client_processor._format_error(error)
       if(!res)
         res = {}
+      
+      if(!res.status && res.status !== 'error')
+        res.status = 'error'
 
       res.msg = error_msg
 

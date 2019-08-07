@@ -159,7 +159,7 @@ var hmt_client_processor = function(settings){
             if(transaction.cb_data)
               token_res.cb_data = transaction.cb_data
 
-            return me._respond(err, token_res, cb)
+            return me._handle_fullsteam_error(token_res, cb)
           }
   
           transaction.payment_token = token_res.token
@@ -591,8 +591,10 @@ var hmt_client_processor = function(settings){
       for(key in res.responseDetails)
         msg += res.responseDetails[key].message+"\n\n"
     }
+
+    res.msg = msg;
     
-    return me._throw_error(true, {msg: msg}, cb)
+    return me._throw_error(true, res, cb)
     
   }
   

@@ -26,8 +26,6 @@ var hmt_client_processor = function(settings){
     this._remove_card_data()
     // determine the method to use spreedly | fullsteam   
 
-    console.log('transaction', transaction) 
-
     if(transaction.processor_method == 'spreedly')
       this._submit_spreedly(card, transaction, cb)
     else if(transaction.processor_method == 'fullsteam')
@@ -172,8 +170,6 @@ var hmt_client_processor = function(settings){
             if(transaction.cb_data) 
               transaction_res.cb_data = transaction.cb_data
             
-            console.log('submit_fullsteam res', err, transaction_res)
-  
             if(!err && transaction_res.ticket_key)
               me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
             
@@ -207,8 +203,6 @@ var hmt_client_processor = function(settings){
 
   this.save_card = function(card, transaction, processor, ticket_key){
 
-    console.log("SAVE CARD", card, transaction, ticket_key)
-
     if(!card || !card.payment_method || !card.payment_method.credit_card)
       return
 
@@ -222,7 +216,6 @@ var hmt_client_processor = function(settings){
 
     if(processor == 'spreedly'){
       me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
-        console.log('spreedly token result', err, token_res)
         if(err) {
           return;
         }
@@ -265,7 +258,6 @@ var hmt_client_processor = function(settings){
   this.webuser_save_card = function(card, data, webuser_id, cb) {
 
 		me._get_spreedly_token(card, data.spreedly_environment_key, function(err, token_res) {
-			console.log('spreedly token result', err, token_res);
 			if (err) {
 				me._respond(err, token_res, cb);
 				return;
@@ -330,7 +322,6 @@ var hmt_client_processor = function(settings){
 								data: data,
 								form_encoded: true,
 								cb : function(err, res) {
-									console.log('err,res', err, res);
 									me._respond(err, res, cb);
 								}
 							});
@@ -343,14 +334,11 @@ var hmt_client_processor = function(settings){
 
   this._save_card_to_webuser = function(args){
 
-    console.log("ARGS", args)
-
     me._remember_card_data(args)
 
     var card_data = me.card_data ? me._format_card_for_save(me.card_data) : null
 
     if(me.card_ticket_key && card_data && me.card_token && me.card_processor){
-      console.log('card_data checks PASSED', card_data)
 
       var data = {
         ticket_key: me.card_ticket_key,
@@ -366,7 +354,6 @@ var hmt_client_processor = function(settings){
         data: data,
         form_encoded: true,
         cb : function(err, res){
-          console.log('err,res', err, res)
           // me._respond(err, res, cb)
         }
       })
@@ -375,7 +362,6 @@ var hmt_client_processor = function(settings){
   }
 
   this._format_card_for_save = function(card_data){
-    console.log("card_data", card_data)
     
     if(!card_data.full_name)
       return false
@@ -430,7 +416,6 @@ var hmt_client_processor = function(settings){
   }
 
   this._get_fullsteam_token = function(card, transaction, auth_key, cb){
-    console.log('TRANSACTION', transaction)
     if(
       !card || 
       !card.payment_method || 

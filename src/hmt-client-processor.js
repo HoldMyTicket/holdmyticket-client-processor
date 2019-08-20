@@ -577,6 +577,30 @@ var hmt_client_processor = function(settings){
         msg += res.responseDetails[key].message+"\n\n"
     }
 
+    if(res && res.issuerResponseDetails){
+      var issuerResponseCode = res.issuerResponseDetails.issuerResponseCode || 0
+      var issuerResponseDescription = res.issuerResponseDetails.issuerResponseDescription || ''
+      var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode && ['M', 'P'].indexOf(res.issuerResponseDetails.cvvResponseCode) == -1 ? res.issuerResponseDetails.cvvResponseCode : 0
+      var CVVResponseDescription =  CVVResponseCode && res.issuerResponseDetails.cvvResponseDescription ? res.issuerResponseDetails.cvvResponseDescription : ''
+      //we only look for cvv not M (match), P (not processed) cvv
+
+      if(CVVResponseDescription){
+        msg = "CVV Error: "+CVVResponseDescription; //takes precedence
+      } else {
+        if(msg == '' && issuerResponseDescription)
+          msg = "Error: "+issuerResponseDescription
+
+        if(msg == '' && (!issuerResponseCode || issuerResponseCode == '00'))
+          msg = "CPE2: Missing error code"
+
+        if(msg == '') 
+          msg = "CPE3: Unkown issuer error"
+
+      };
+    };
+
+    msg = msg || "CPE4: Unknown processor error"
+
     res.msg = msg;
     
     return me._throw_error(true, res, cb)

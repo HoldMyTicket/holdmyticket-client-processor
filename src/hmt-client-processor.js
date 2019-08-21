@@ -640,18 +640,22 @@ var hmt_client_processor = function(settings){
   
   this._serialize = function(obj, prefix) {
     
-    var str = [], p;
+    var str = [], p, prefix;
     for (p in obj) {
       if (obj.hasOwnProperty(p)) {
         var k = prefix ? prefix + "[" + p + "]" : p,
           v = obj[p];
-        str.push((v !== null && typeof v === "object") ?
-          me._serialize(v, k) :
+        if(typeof v === 'undefined')
+          continue;
+        if(v === null)
+          v = '';
+        str.push((typeof v === "object") ?
+          hmt_client_processor._serialize(v, k) :
           encodeURIComponent(k) + "=" + encodeURIComponent(v));
       }
     }
     return str.join("&");
-    
+        
   }
 
   this.api_url = settings.api_url || '' // set when the script is loaded

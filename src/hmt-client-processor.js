@@ -650,7 +650,7 @@ var hmt_client_processor = function(settings){
         if(v === null)
           v = '';
         str.push((typeof v === "object") ?
-          hmt_client_processor._serialize(v, k) :
+          me._serialize(v, k) :
           encodeURIComponent(k) + "=" + encodeURIComponent(v));
       }
     }

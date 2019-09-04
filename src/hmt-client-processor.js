@@ -438,25 +438,24 @@ var hmt_client_processor = function(settings){
         "expirationYear": card.payment_method.credit_card.year,
         "billingInformation": {
           "nameOnAccount": card.payment_method.credit_card.full_name,
-          // "businessName": "string",
           "firstName": transaction.f_name || null,
           "lastName": transaction.l_name || null,
-          // "middleName": "string",
           "address1": transaction.address1 || null,
           "address2": transaction.address2 || null,
-          // "address3": "string",
           "city": transaction.city || null,
           "state": transaction.state || null,
           "zip": transaction.zip || null,
-        //   "country": "string",
+          "country": me._get_fullsteam_contry_code(transaction),
           "phone": transaction.phone || null,
-        //   "phoneCountryCode": 0,
           "email": transaction.email || null,
         }
       },
       "cardEntryContext": this.app_type == 'box' ? 1 : 5,
       "performAccountVerification": true
     }
+
+    if(transaction.country_id && transaction.country_id != '2')
+      delete data.clearTextCardData.billingInformation.state
     
     me._request({
       url: this.fullsteam_url() + 'api/token/card/clearText/create',
@@ -656,6 +655,21 @@ var hmt_client_processor = function(settings){
     }
     return str.join("&");
         
+  }
+
+  this._get_fullsteam_contry_code = function(transaction){
+    //country_id from HMT. return intnl country_code
+
+    var hmt_country_id = transaction.country_id || '2'
+
+    if(me.country_codes && me.country_codes[hmt_country_id])
+      return me.country_codes[hmt_country_id]
+
+    return 'US';
+  }
+
+  this.country_codes = {
+    '2':'US','3':'AI','4':'AR','5':'AU','6':'AT','7':'BE','8':'BR','9':'CA','10':'CL','11':'C2','12':'CR','13':'CY','14':'CZ','15':'DK','16':'DO','17':'EC','18':'EE','19':'FI','20':'FR','21':'DE','22':'GR','23':'HK','24':'HU','25':'IS','26':'IN','27':'IE','28':'IL','29':'IT','30':'JM','31':'JP','32':'LV','33':'LT','34':'LU','35':'MY','36':'MT','37':'MX','38':'NL','39':'NZ','40':'NO','41':'PL','42':'PT','43':'SG','44':'SK','45':'SI','46':'ZA','47':'KR','48':'ES','49':'SE','50':'CH','51':'TW','52':'TH','53':'TR','54':'GB','55':'UY','56':'VE','57':'PE','58':'GT','59':'SL','60':'AL','61':'DZ','62':'AD','63':'AO','64':'AG','65':'AM','66':'AW','67':'AZ','68':'BS','69':'BH','70':'BB','71':'BZ','72':'BJ','73':'BM','74':'BT','75':'BO','76':'BA','77':'BW','78':'VG','79':'BN','80':'BG','81':'BF','82':'BI','83':'KH','84':'CV','85':'KY','86':'TD','87':'CO','88':'KM','89':'CK','90':'HR','91':'CD','92':'DJ','93':'DM','94':'SV','95':'ER','96':'ET','97':'FK','98':'FO','99':'FM','100':'FJ','101':'GF','102':'PF','103':'GA','104':'GM','105':'GI','106':'GL','107':'GD','108':'GP','109':'GN','110':'GW','111':'GY','112':'HN','113':'ID','114':'JO','115':'KZ','116':'KE','117':'KI','118':'KW','119':'KG','120':'LA','121':'LS','122':'LI','123':'MG','124':'MW','125':'MV','126':'ML','127':'MH','128':'MQ','129':'MR','130':'MU','131':'YT','132':'MN','133':'MS','134':'MA','135':'MZ','136':'NA','137':'NR','138':'NP','139':'AN','140':'NC','141':'NI','142':'NE','143':'NU','144':'NF','145':'OM','146':'PW','147':'PA','148':'PG','149':'PH','150':'PN','151':'QA','152':'CG','153':'RE','154':'RO','155':'RU','156':'RW','157':'VC','158':'WS','159':'SM','160':'ST','161':'SA','162':'SN','163':'SC','164':'SB','165':'SO','166':'LK','167':'SH','168':'KN','169':'LC','170':'PM','171':'SR','172':'SJ','173':'SZ','174':'TJ','175':'TZ','176':'TG','177':'TO','178':'TT','179':'TN','180':'TM','181':'TC','182':'TV','183':'UG','184':'UA','185':'AE','186':'VU','187':'VA','188':'VN','189':'WF','190':'YE','191':'ZM'
   }
 
   this.api_url = settings.api_url || '' // set when the script is loaded

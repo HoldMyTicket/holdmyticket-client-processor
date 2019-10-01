@@ -450,7 +450,7 @@ var hmt_client_processor = function(settings){
           "email": transaction.email || null,
         }
       },
-      "cardEntryContext": this.app_type == 'box' ? 1 : 5,
+      "cardEntryContext": this.app_type == 'box' ? 0 : 5,
       "performAccountVerification": true
     }
 

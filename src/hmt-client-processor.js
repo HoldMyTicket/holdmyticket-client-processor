@@ -403,6 +403,19 @@ var hmt_client_processor = function(settings){
     delete me.processor
     delete me.card_ticket_key
   }
+
+  this._remove_sensitive_card_data = function(data){
+
+    delete data.cc_no
+    delete data.cc_cvc
+    delete data.cc_expiry
+    delete data.cc_name
+    delete data.encryptedTrack1
+    delete data.encryptedTrack2
+    delete data.ksn
+
+    return data
+  }
   
   this._get_fullsteam_auth_key = function(cb){
     
@@ -444,13 +457,13 @@ var hmt_client_processor = function(settings){
           "address2": transaction.address2 || null,
           "city": transaction.city || null,
           "state": transaction.state || null,
-          "zip": transaction.zip || null,
+          "zip": transaction.zip || (this.app_type  == 'box' ? '00000' : null),
           "country": me._get_fullsteam_contry_code(transaction),
           "phone": transaction.phone || null,
           "email": transaction.email || null,
         }
       },
-      "cardEntryContext": this.app_type == 'box' ? 0 : 5,
+      "cardEntryContext": this.app_type == 'box' ? 7 : 5,
       "performAccountVerification": true
     }
 
@@ -474,7 +487,8 @@ var hmt_client_processor = function(settings){
   }
   
   this._submit_fullsteam_transaction = function(transaction, cb){
-    
+    transaction = me._remove_sensitive_card_data(transaction)
+
     me._request({
       url: this.url('shop/carts/submit', true),
       type: 'POST',
@@ -504,19 +518,33 @@ var hmt_client_processor = function(settings){
     if(opts.auth_key)
       headers['authenticationKey'] = opts.auth_key
 
+    var url = opts.url
+
+    var data = {}
+    if(opts.data)
+      data = opts.data
+
+    if(this.auth && this.app_type == 'box' && url.indexOf('submit') > -1){
+      url += (url.indexOf('?') > -1 ? '&' : '?') + 'auth='+this.auth
+      if(typeof data == 'object')
+        data.can_handle_fullsteam = 'true'
+      if(typeof data == 'string')
+        data += '&can_handle_fullsteam=true'
+    }
+
     axios({
       method: opts.type || 'GET',
-      url: opts.url,
+      url: url,
       mode: 'no-cors',
       credentials: 'same-origin',
       headers: headers,
       withCredentials: opts.withCredentials || false,
       crossdomain: opts.crossdomain || false,
-      data: opts.data
+      data: data
     }).then(function(response){
       // react native seems to have a bug where the statusText comes through as undefined
       // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
-      if (me.isHmtMobile && response.status == 200 && !response.statusText) {
+      if(me.isHmtMobile && response.status == 200 && !response.statusText) {
         response.statusText = 'OK';
       }
       
@@ -524,7 +552,7 @@ var hmt_client_processor = function(settings){
         opts.cb(null, response)
       
     }).catch(function(error, res){
-      var error_msg = me._format_error(error, opts.url)
+      var error_msg = me._format_error(error, url)
       if(!res)
         res = {}
       
@@ -681,6 +709,8 @@ var hmt_client_processor = function(settings){
   this.app_type = settings.app_type || '' // set prior to submit (online | box)
 
   this.isHmtMobile = settings.isHmtMobile ||  false
+
+  this.auth = settings.app_type == 'box' && settings.auth || ''
 
   
 }

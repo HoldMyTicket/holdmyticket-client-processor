@@ -544,7 +544,7 @@ var hmt_client_processor = function(settings){
     }).then(function(response){
       // react native seems to have a bug where the statusText comes through as undefined
       // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
-      if(me.isHmtMobile && response.status == 200 && !response.statusText) {
+      if (me.isHmtMobile && (response.status == 200 || response.status == 201) && !response.statusText) {
         response.statusText = 'OK';
       }
       

@@ -520,7 +520,7 @@ var hmt_client_processor = function(settings){
 
     var url = opts.url
 
-    var data = {}
+    var data;
     if(opts.data)
       data = opts.data
 

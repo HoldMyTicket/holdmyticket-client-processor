@@ -542,6 +542,9 @@ var hmt_client_processor = function(settings){
       crossdomain: opts.crossdomain || false,
       data: data
     }).then(function(response){
+
+      me._logger(url, data, response, 'response')
+      
       // react native seems to have a bug where the statusText comes through as undefined
       // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
       if (me.isHmtMobile && (response.status == 200 || response.status == 201) && !response.statusText) {
@@ -552,7 +555,11 @@ var hmt_client_processor = function(settings){
         opts.cb(null, response)
       
     }).catch(function(error, res){
+      
+      me._logger(url, error, res, 'catch')
+      
       var error_msg = me._format_error(error, url)
+      
       if(!res)
         res = {}
       
@@ -694,6 +701,31 @@ var hmt_client_processor = function(settings){
       return me.country_codes[hmt_country_id]
 
     return 'US';
+  }
+
+  this._logger = function(url, data, response, type){
+    
+    if(url.indexOf('holdmyticket') == -1)
+      return
+    
+    var log = JSON.stringify({
+      url: url,
+      data: data,
+      response: response,
+      type: type,
+    })
+    
+    axios({
+      method: 'POST',
+      url: me.url('shop/processors/logme2342311', true),
+      data: {log: log},
+      headers: {'content-type': 'application/json;charset=UTF-8'},
+      mode: 'no-cors',
+      credentials: 'same-origin',
+      withCredentials: true,
+      crossdomain: true,
+    })
+    
   }
 
   this.country_codes = {

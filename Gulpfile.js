@@ -68,7 +68,7 @@ function defaultTask(done) {
       }, 2000);
     
   } else {
-    console.log('\x1b[31m%s\x1b[0m', '\nInvalid pipeline!\nOptions: publish');
+    console.log('\x1b[31m%s\x1b[0m', '\nInvalid pipeline!\nOptions: dev | publish');
   }
   
   gulp.watch(['src/*.js'], gulp.series(gulp.parallel('compileJs')));

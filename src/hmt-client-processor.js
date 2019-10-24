@@ -594,12 +594,12 @@ var hmt_client_processor = function(settings){
       return error_msg
     }
 
-    return 'Unkown error'
+    return 'CPE5: Unknown error'
 
   }
 
   this._format_fullsteam_error = function(error){
-    return error && error.msg ? error.msg : 'Unkown error'
+    return error && error.msg ? error.msg : 'CPE6: Unknown error'
   }
   
   this._handle_fullsteam_error = function(res, cb){
@@ -628,7 +628,7 @@ var hmt_client_processor = function(settings){
           msg = "CPE2: Missing error code"
 
         if(msg == '') 
-          msg = "CPE3: Unkown issuer error"
+          msg = "CPE3: Unknown issuer error"
 
       };
     };
@@ -704,28 +704,35 @@ var hmt_client_processor = function(settings){
   }
 
   this._logger = function(url, data, response, type){
-    
-    if(url.indexOf('holdmyticket') == -1)
+
+    if (url.indexOf('holdmyticket') == -1 && type != 'catch')
       return
-    
-    var log = JSON.stringify({
-      url: url,
-      data: data,
-      response: response,
-      type: type,
-    })
-    
-    axios({
-      method: 'POST',
-      url: me.url('shop/processors/logme2342311', true),
-      data: {log: log},
-      headers: {'content-type': 'application/json;charset=UTF-8'},
-      mode: 'no-cors',
-      credentials: 'same-origin',
-      withCredentials: true,
-      crossdomain: true,
-    })
-    
+
+    try {
+
+      var log = JSON.stringify({
+        url: url,
+        data: data,
+        response: response,
+        type: type,
+      })
+
+      axios({
+        method: 'POST',
+        url: me.url('shop/processors/logme2342311', true),
+        data: {log: log},
+        headers: {'content-type': 'application/json;charset=UTF-8'},
+        mode: 'no-cors',
+        credentials: 'same-origin',
+        withCredentials: true,
+        crossdomain: true,
+      })
+
+    } catch {
+      // console.error so we can reference this in FullStory
+      console.error('CPE7 Logger Error', url, data, response, type)
+    }
+
   }
 
   this.country_codes = {

@@ -728,9 +728,10 @@ var hmt_client_processor = function(settings){
         crossdomain: true,
       })
 
-    } catch {
+    } catch(error) {
       // console.error so we can reference this in FullStory
-      console.error('CPE7 Logger Error', url, data, response, type)
+      console.warn('CPE7 Logger Warn', url, data, response, type)
+      console.error('CPE7 Logger Error', error);
     }
 
   }

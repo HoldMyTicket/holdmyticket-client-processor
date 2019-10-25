@@ -607,7 +607,7 @@ var hmt_client_processor = function(settings){
     var msg = ''
     
     if(res && res.responseDetails){
-      for(key in res.responseDetails)
+      for(var key in res.responseDetails)
         msg += res.responseDetails[key].message+"\n\n"
     }
 
@@ -674,8 +674,9 @@ var hmt_client_processor = function(settings){
   
   this._serialize = function(obj, prefix) {
     
-    var str = [], p, prefix;
-    for (p in obj) {
+    var str = [], p
+    var prefix = prefix || ''
+    for(p in obj) {
       if (obj.hasOwnProperty(p)) {
         var k = prefix ? prefix + "[" + p + "]" : p,
           v = obj[p];
@@ -705,8 +706,8 @@ var hmt_client_processor = function(settings){
 
   this._logger = function(url, data, response, type){
 
-    if (url.indexOf('holdmyticket') == -1 && type != 'catch')
-      return
+    // if (url.indexOf('holdmyticket') == -1 && type != 'catch')
+    //   return
 
     try {
 

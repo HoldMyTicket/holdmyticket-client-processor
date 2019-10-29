@@ -711,12 +711,12 @@ var hmt_client_processor = function(settings){
 
     try {
 
-      var log = JSON.stringify({
+      var log = JSON.stringify(me._clean_object({
         url: url,
         data: data,
         response: response,
         type: type,
-      })
+      }))
 
       axios({
         method: 'POST',
@@ -735,6 +735,30 @@ var hmt_client_processor = function(settings){
       console.error('CPE7 Logger Error', error);
     }
 
+  }
+
+  this._clean_object = function(data_obj){
+    var clean_obj = {}
+
+    for(var k in data_obj){
+      if(typeof data_obj[k] == 'string'){
+        if(me._contains_credit(data_obj[k]))
+          clean_obj[k] = 'XXXX'+data_obj[k].substring(data_obj[k].length-4, data_obj[k].length)
+        else
+          clean_obj[k] = data_obj[k]
+      } else if(typeof data_obj[k] == 'object'){
+        clean_obj[k] = me._clean_object(data_obj[k])
+      }
+    }
+    return clean_obj;
+  }
+
+  this._contains_credit = function(d){
+    if(d.replace(/[\s-_.]/g,'').match(/\d{14,}/g)){
+      return true;
+    }
+
+    return false
   }
 
   this.country_codes = {

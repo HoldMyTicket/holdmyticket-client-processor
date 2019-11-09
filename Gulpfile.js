@@ -33,6 +33,12 @@ function compileJs() {
             commonjs2: 'axios',
             amd: 'axios',
             root: 'axios'
+          },
+          qs: {
+            commonjs: 'qs',
+            commonjs2: 'qs',
+            amd: 'qs',
+            root: 'Qs'
           }
          }
       }))

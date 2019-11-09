@@ -512,7 +512,9 @@ var hmt_client_processor = function(settings){
     
     if(opts.form_encoded){
       headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-      opts.data = me._serialize(opts.data)
+      // Array format repeat option gives the same behavior as what jQuery.ajax does when it
+      // encounters an array value. More info here https://api.jquery.com/jquery.ajax/
+      opts.data = qs.stringify(opts.data, { arrayFormat: 'repeat' })
     }
 
     if(opts.auth_key)
@@ -670,27 +672,6 @@ var hmt_client_processor = function(settings){
     if(cb)
       cb(err, res)
     
-  }
-  
-  this._serialize = function(obj, prefix) {
-    
-    var str = [], p
-    var prefix = prefix || ''
-    for(p in obj) {
-      if (obj.hasOwnProperty(p)) {
-        var k = prefix ? prefix + "[" + p + "]" : p,
-          v = obj[p];
-        if(typeof v === 'undefined')
-          continue;
-        if(v === null)
-          v = '';
-        str.push((typeof v === "object") ?
-          me._serialize(v, k) :
-          encodeURIComponent(k) + "=" + encodeURIComponent(v));
-      }
-    }
-    return str.join("&");
-        
   }
 
   this._get_fullsteam_contry_code = function(transaction){

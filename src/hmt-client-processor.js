@@ -1,5 +1,5 @@
 import axios from 'axios';
-import qs from 'qs';
+import Qs from 'qs';
 
 var hmt_client_processor = function(settings){
 
@@ -515,11 +515,7 @@ var hmt_client_processor = function(settings){
       headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
       // Array format repeat option gives the same behavior as what jQuery.ajax does when it
       // encounters an array value. More info here https://api.jquery.com/jquery.ajax/
-      if (qs && qs.stringify) {
-        opts.data = qs.stringify(opts.data, { arrayFormat: 'repeat' })
-      } else {
-        opts.data = Qs.stringify(opts.data, { arrayFormat: 'repeat' })
-      }
+      opts.data = Qs.stringify(opts.data, { arrayFormat: 'repeat' })
       
     }
 

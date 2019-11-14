@@ -25,8 +25,11 @@ var hmt_client_processor = function(settings){
   
   this.submit_transaction = function(card, transaction, cb){
     this._remove_card_data()
-    // determine the method to use spreedly | fullsteam   
+    
+    // removing all phone special chars. Only allow numbers
+    if (transaction.phone) transaction.phone = this._format_phone_number(transaction.phone);
 
+    // determine the method to use spreedly | fullsteam
     if(transaction.processor_method == 'spreedly')
       this._submit_spreedly(card, transaction, cb)
     else if(transaction.processor_method == 'fullsteam')
@@ -742,6 +745,11 @@ var hmt_client_processor = function(settings){
     }
 
     return false
+  }
+
+  this._format_phone_number = function(phone_number) {
+    // \D stands for any non digit
+    return phone_number.replace(/\D/g, '');
   }
 
   this.country_codes = {

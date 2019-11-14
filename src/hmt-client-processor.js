@@ -697,12 +697,20 @@ var hmt_client_processor = function(settings){
 
     try {
 
-      var log = JSON.stringify(me._clean_object({
+      if (response && response.status) response.status = String(response.status);
+
+      var all_log_data = {
         url: url,
         data: data,
         response: response,
         type: type,
-      }))
+      }
+
+      if (!me.hmtMobile) {
+        all_log_data.browser_info = me._get_browser_info();
+      }
+
+      var log = JSON.stringify(me._clean_object(all_log_data))
 
       axios({
         method: 'POST',
@@ -750,6 +758,15 @@ var hmt_client_processor = function(settings){
   this._format_phone_number = function(phone_number) {
     // \D stands for any non digit
     return phone_number.replace(/\D/g, '');
+  }
+
+  this._get_browser_info = function() {
+    return {
+      platform: navigator && navigator.platform ? navigator.platform : '',
+      userAgent: navigator && navigator.userAgent ? navigator.userAgent : '',
+      vendor: navigator && navigator.vendor ? navigator.vendor : '',
+      vendorSub: navigator && navigator.vendorSub ? navigator.vendorSub : '',
+    }
   }
 
   this.country_codes = {

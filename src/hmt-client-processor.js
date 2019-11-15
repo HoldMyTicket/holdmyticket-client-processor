@@ -562,8 +562,14 @@ var hmt_client_processor = function(settings){
         opts.cb(null, response)
       
     }).catch(function(error, res){
+      // if we have no status then axios data is for the most part empty
+      // instead we can send through the post data like we do in .then above
+      var logger_data = error;
+      if (!error.status) {
+        logger_data = data;
+      }
       
-      me._logger(url, error, res, 'catch')
+      me._logger(url, logger_data, res, 'catch')
       
       var error_msg = me._format_error(error, url)
       

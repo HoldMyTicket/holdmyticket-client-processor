@@ -580,6 +580,7 @@ var hmt_client_processor = function(settings){
         res.status = 'error'
 
       res.msg = error_msg
+      res.axiosErrorMsg = error.message
 
       if(opts.cb)
         opts.cb(error, res)

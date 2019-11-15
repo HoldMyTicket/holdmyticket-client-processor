@@ -741,10 +741,13 @@ var hmt_client_processor = function(settings){
 
     for(var k in data_obj){
       if(typeof data_obj[k] == 'string'){
-        if(me._contains_credit(data_obj[k]))
+        if(me._contains_credit(data_obj[k])) {
           clean_obj[k] = 'XXXX'+data_obj[k].substring(data_obj[k].length-4, data_obj[k].length)
-        else
+        } else if(k == 'cvv') {
+          clean_obj[k] = 'XXXX'
+        } else {
           clean_obj[k] = data_obj[k]
+        }
       } else if(typeof data_obj[k] == 'object'){
         clean_obj[k] = me._clean_object(data_obj[k])
       } else if (typeof data_obj[k] == 'number' && k == 'status') {

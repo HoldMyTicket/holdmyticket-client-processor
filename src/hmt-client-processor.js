@@ -697,8 +697,6 @@ var hmt_client_processor = function(settings){
 
     try {
 
-      if (response && response.status) response.status = String(response.status);
-
       var all_log_data = {
         url: url,
         data: data,
@@ -742,6 +740,8 @@ var hmt_client_processor = function(settings){
           clean_obj[k] = data_obj[k]
       } else if(typeof data_obj[k] == 'object'){
         clean_obj[k] = me._clean_object(data_obj[k])
+      } else if (typeof data_obj[k] == 'number' && k == 'status') {
+        clean_obj[k] = data_obj[k]
       }
     }
     return clean_obj;

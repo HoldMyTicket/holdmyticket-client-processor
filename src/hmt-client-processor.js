@@ -113,6 +113,7 @@ var hmt_client_processor = function(settings){
   }
   
   this._submit_spreedly_transaction = function(transaction, cb){
+    transaction = me._remove_sensitive_card_data(transaction)
     
     me._request({
       url: me.url('shop/carts/submit', true),

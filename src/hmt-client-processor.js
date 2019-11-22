@@ -518,7 +518,6 @@ var hmt_client_processor = function(settings){
     if(opts.form_encoded){
       headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
       
-      // console.log(Qs.stringify(opts.data), 'all data stringified without array format option');
       if (opts.data.payments) {
         var payments = opts.data.payments;
         delete opts.data.payments;
@@ -526,13 +525,9 @@ var hmt_client_processor = function(settings){
         var stringifiedPostData = Qs.stringify(opts.data, { arrayFormat: 'repeat' });
         var stringifiedPayments = Qs.stringify({ payments: payments });
         stringifiedPostData = stringifiedPostData + '&' + stringifiedPayments;
-        // console.log(stringifiedPostData, 'all of it');
       } else {
         var stringifiedPostData = Qs.stringify(opts.data, { arrayFormat: 'repeat' });
       }
-
-      // console.log(stringifiedPostData);
-      // console.log(stringifiedPayments);
       
       opts.data = stringifiedPostData;
     }

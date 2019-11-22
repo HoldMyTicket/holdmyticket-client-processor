@@ -517,10 +517,21 @@ var hmt_client_processor = function(settings){
     
     if(opts.form_encoded){
       headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-      // Array format repeat option gives the same behavior as what jQuery.ajax does when it
-      // encounters an array value. More info here https://api.jquery.com/jquery.ajax/
-      opts.data = Qs.stringify(opts.data, { arrayFormat: 'repeat' })
+      //fixing survey answers in an array from being nested into another array
+      // incorrect = survey[id][id][0][][0]
+      // correct = survey[id][id][0][0]
+      for (var key in opts.data) {
+        if (key.indexOf('survey') != -1 && key.match(/\[\d+\]\[\]/)) {
+          // re add key value pair with fixed key
+          var newkey = key.replace('[]', '');
+          opts.data[newkey] = opts.data[key];
+
+          // delete old key value pair
+          delete opts.data[key];
+        }
+      }
       
+      opts.data = Qs.stringify(opts.data);
     }
 
     if(opts.auth_key)

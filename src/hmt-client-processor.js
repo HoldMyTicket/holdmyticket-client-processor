@@ -517,21 +517,24 @@ var hmt_client_processor = function(settings){
     
     if(opts.form_encoded){
       headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-      //fixing survey answers in an array from being nested into another array
-      // incorrect = survey[id][id][0][][0]
-      // correct = survey[id][id][0][0]
-      for (var key in opts.data) {
-        if (key.indexOf('survey') != -1 && key.match(/\[\d+\]\[\]/)) {
-          // re add key value pair with fixed key
-          var newkey = key.replace('[]', '');
-          opts.data[newkey] = opts.data[key];
-
-          // delete old key value pair
-          delete opts.data[key];
-        }
-      }
       
-      opts.data = Qs.stringify(opts.data);
+      // console.log(Qs.stringify(opts.data), 'all data stringified without array format option');
+      if (opts.data.payments) {
+        var payments = opts.data.payments;
+        delete opts.data.payments;
+
+        var stringifiedPostData = Qs.stringify(opts.data, { arrayFormat: 'repeat' });
+        var stringifiedPayments = Qs.stringify({ payments: payments });
+        stringifiedPostData = stringifiedPostData + '&' + stringifiedPayments;
+        // console.log(stringifiedPostData, 'all of it');
+      } else {
+        var stringifiedPostData = Qs.stringify(opts.data, { arrayFormat: 'repeat' });
+      }
+
+      // console.log(stringifiedPostData);
+      // console.log(stringifiedPayments);
+      
+      opts.data = stringifiedPostData;
     }
 
     if(opts.auth_key)

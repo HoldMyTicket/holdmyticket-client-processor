@@ -18,7 +18,6 @@ var hmt_client_processor = function(settings){
   
   this.fullsteam_url = function(){
 
-    // return 'http://holdmyticket.loc/403.php?'
     return 'https://api'+(this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? '-ext' : '')+'.fullsteampay.net/'
 
   }

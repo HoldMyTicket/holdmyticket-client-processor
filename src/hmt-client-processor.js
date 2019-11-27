@@ -714,18 +714,23 @@ var hmt_client_processor = function(settings){
 
     try {
 
+      var dataCopy = JSON.parse(JSON.stringify(data));
+      var responseCopy = JSON.parse(JSON.stringify(response));
+      
+      if(dataCopy.clearTextCardData) delete dataCopy.clearTextCardData
+      if(responseCopy.config.data) delete responseCopy.config.data
+      
       var all_log_data = {
         url: url,
-        data: data,
-        response: response,
+        data: dataCopy,
+        response: responseCopy,
         type: type,
       }
-
-      if (!me.hmtMobile) {
+      
+      if (!me.hmtMobile)
         all_log_data.browser_info = me._get_browser_info();
-      }
 
-      var log = JSON.stringify(me._clean_object(all_log_data))
+      var log = this._prepare_for_log(all_log_data)
 
       axios({
         method: 'POST',
@@ -746,26 +751,43 @@ var hmt_client_processor = function(settings){
 
   }
 
-  this._clean_object = function(data_obj){
-    var clean_obj = {}
+  this._prepare_for_log = function(data){
+    
+    var str = JSON.stringify(data)
 
-    for(var k in data_obj){
-      if(typeof data_obj[k] == 'string'){
-        if(me._contains_credit(data_obj[k])) {
-          clean_obj[k] = 'XXXX'+data_obj[k].substring(data_obj[k].length-4, data_obj[k].length)
-        } else if(k == 'cvv') {
-          clean_obj[k] = 'XXXX'
-        } else {
-          clean_obj[k] = data_obj[k]
-        }
-      } else if(typeof data_obj[k] == 'object'){
-        clean_obj[k] = me._clean_object(data_obj[k])
-      } else if (typeof data_obj[k] == 'number' && k == 'status') {
-        clean_obj[k] = data_obj[k]
-      }
-    }
-    return clean_obj;
+    // mask cc data
+    str = str.replace(/\b(?:\d{4}[ -]?){3}(?=\d{4}\b)/gm, `**** **** **** `)
+    
+    return str
+
   }
+
+  // this._clean_object = function(data_obj){
+  //   var clean_obj = {}
+  // 
+  //   for(var k in data_obj){
+  // 
+  //     console.log('data clean typeof', typeof data_obj[k])
+  //     console.log('data clean key', k)
+  //     console.log('data clean val', data_obj[k])
+  //     console.log('----------')
+  // 
+  //     if(typeof data_obj[k] == 'string'){
+  //       if(me._contains_credit(data_obj[k])) {
+  //         clean_obj[k] = 'XXXX'+data_obj[k].substring(data_obj[k].length-4, data_obj[k].length)
+  //       } else if(k == 'cvv') {
+  //         clean_obj[k] = 'XXXX'
+  //       } else {
+  //         clean_obj[k] = data_obj[k]
+  //       }
+  //     } else if(typeof data_obj[k] == 'object'){
+  //       clean_obj[k] = me._clean_object(data_obj[k])
+  //     } else if (typeof data_obj[k] == 'number' && k == 'status') {
+  //       clean_obj[k] = data_obj[k]
+  //     }
+  //   }
+  //   return clean_obj;
+  // }
 
   this._contains_credit = function(d){
     if(d.replace(/[\s-_.]/g,'').match(/\d{14,}/g)){

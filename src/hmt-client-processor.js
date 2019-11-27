@@ -717,15 +717,16 @@ var hmt_client_processor = function(settings){
       var all_log_data = {
         url: url,
         data: data,
-        response: response,
-        type: type,
+        type: type
       }
 
       if (!me.hmtMobile) {
         all_log_data.browser_info = me._get_browser_info();
       }
 
-      var log = JSON.stringify(me._clean_object(all_log_data))
+      var l = me._clean_object(all_log_data)
+      l.response = response
+      var log = JSON.stringify(l)
 
       axios({
         method: 'POST',

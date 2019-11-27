@@ -1,4 +1,3 @@
-import axios from 'axios';
 import Qs from 'qs';
 
 var hmt_client_processor = function(settings){
@@ -19,6 +18,7 @@ var hmt_client_processor = function(settings){
   
   this.fullsteam_url = function(){
 
+    // return 'http://holdmyticket.loc/403.php?'
     return 'https://api'+(this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? '-ext' : '')+'.fullsteampay.net/'
 
   }
@@ -549,54 +549,72 @@ var hmt_client_processor = function(settings){
         data += '&can_handle_fullsteam=true'
     }
 
-    axios({
-      method: opts.type || 'GET',
-      url: url,
-      mode: 'no-cors',
-      credentials: 'same-origin',
-      headers: headers,
-      withCredentials: opts.withCredentials || false,
-      crossdomain: opts.crossdomain || false,
-      data: data
-    }).then(function(response){
+    if(opts.json)
+      data = JSON.stringify(data)
 
-      me._logger(url, data, response, 'response')
-      
-      // react native seems to have a bug where the statusText comes through as undefined
-      // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
-      if (me.isHmtMobile && (response.status == 200 || response.status == 201) && !response.statusText) {
-        response.statusText = 'OK';
-      }
-      
-      if(opts.cb)
-        opts.cb(null, response)
-      
-    }).catch(function(error, res){
-      // if we have no status then axios data is for the most part empty
-      // instead we can send through the post data like we do in .then above
-      var logger_data = error;
-      if (!error.status) {
-        logger_data = data;
-      }
-      
-      me._logger(url, logger_data, res, 'catch')
-      
-      var error_msg = me._format_error(error, url)
-      
-      if(!res)
-        res = {}
-      
-      if(!res.status && res.status !== 'error')
-        res.status = 'error'
+    var xhr = new XMLHttpRequest();
+    xhr.open(opts.type || 'GET', url, true);
+    xhr.withCredentials = opts.withCredentials || false;
+    for(key in headers)
+      xhr.setRequestHeader(key, headers[key])
+    xhr.onreadystatechange = function (evt) {
+      if (xhr.readyState === 4){
 
-      res.msg = error_msg
-      res.axiosErrorMsg = error.message
+        me._logger(url, data, xhr, opts)
 
-      if(opts.cb)
-        opts.cb(error, res)
-      
-    });
+        if (xhr.status && xhr.status >= 200 && xhr.status <= 299){
+          me._success_response(xhr, opts)
+        } else {
+          me._failed_response(xhr, opts)
+        }  
+        
+      }  
+    }; 
+    xhr.send(data)
     
+  }
+  
+  this._success_response = function(xhr, opts){
+    
+    var res = {}
+    
+    try {
+      res = JSON.parse(xhr.responseText)
+    } catch(error) {
+      console.log('could not parse the response to json')
+    }
+
+    // attempt to set statusText
+    if(xhr.statusText)
+      res.statusText = xhr.statusText
+
+    // react native seems to have a bug where the statusText comes through as undefined
+    // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
+    if (me.isHmtMobile && !res.statusText)
+      res.statusText = 'OK';
+  
+    if(opts.cb)
+      opts.cb(null, res)  
+        
+  }
+
+  this._failed_response = function(xhr, opts){
+    
+    var error_msg = me._format_error(error, url)
+
+    if(!res)
+     res = {}
+
+    if(!res.status && res.status !== 'error')
+     res.status = 'error'
+
+    res.statusText = xhr.statusText ? xhr.statusText : 'ERROR'
+    res.msg = error_msg
+    // res.axiosErrorMsg = error.message
+
+    if(opts.cb)
+      opts.cb(error, res)
+
   }
 
   this._format_error = function(error, processor_url) {
@@ -667,7 +685,6 @@ var hmt_client_processor = function(settings){
   
   this._respond = function(err, res, cb){
 
-    
     if(err || !res || res.status == 'error'){
       me._throw_error(err, res, cb)
       return
@@ -707,45 +724,43 @@ var hmt_client_processor = function(settings){
     return 'US';
   }
 
-  this._logger = function(url, data, response, type){
-
-    // if (url.indexOf('holdmyticket') == -1 && type != 'catch')
-    //   return
-
+  this._logger = function(url, data, xhr, opts){
+    
     try {
 
-      var dataCopy = JSON.parse(JSON.stringify(data));
-      var responseCopy = JSON.parse(JSON.stringify(response));
+      var d = {}
       
-      if(dataCopy.clearTextCardData) delete dataCopy.clearTextCardData
-      if(responseCopy.config.data) delete responseCopy.config.data
+      if(data && opts.json && typeof data == 'string')
+        d = JSON.parse(data)
       
-      var all_log_data = {
+      if(d.clearTextCardData)
+        delete d.clearTextCardData
+
+      var log = this._prepare_for_log({
         url: url,
-        data: dataCopy,
-        response: responseCopy,
-        type: type,
-      }
-      
-      if (!me.hmtMobile)
-        all_log_data.browser_info = me._get_browser_info();
-
-      var log = this._prepare_for_log(all_log_data)
-
-      axios({
-        method: 'POST',
-        url: me.url('shop/processors/logme2342311', true),
-        data: {log: log},
-        headers: {'content-type': 'application/json;charset=UTF-8'},
-        mode: 'no-cors',
-        credentials: 'same-origin',
-        withCredentials: true,
-        crossdomain: true,
+        data: d,
+        xhr: { // had to define these, can't stringify the raw xhr
+          readyState: xhr.readyState ? xhr.readyState : null,
+          response: xhr.response ? xhr.response : null,
+          responseText: xhr.responseText ? xhr.responseText : null,
+          responseURL: xhr.responseURL ? xhr.responseURL : null,
+          responseXML: xhr.responseXML ? xhr.responseXML : null,
+          status: xhr.status ? xhr.status : null,
+          statusText: xhr.statusText ? xhr.statusText : null,
+          timeout: xhr.timeout ? xhr.timeout : null
+        },
+        browser_info: me._get_browser_info()
       })
+      
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', me.url('shop/processors/logme2342311', true), true);
+      xhr.withCredentials = true
+      xhr.setRequestHeader('content-type', 'application/json;charset=UTF-8')
+      xhr.send(JSON.stringify(log))
 
     } catch(error) {
       // console.error so we can reference this in FullStory
-      console.warn('CPE7 Logger Warn', url, data, response, type)
+      console.warn('CPE7 Logger Warn', url, data, xhr)
       console.error('CPE7 Logger Error', error);
     }
 
@@ -761,54 +776,24 @@ var hmt_client_processor = function(settings){
     return str
 
   }
-
-  // this._clean_object = function(data_obj){
-  //   var clean_obj = {}
-  // 
-  //   for(var k in data_obj){
-  // 
-  //     console.log('data clean typeof', typeof data_obj[k])
-  //     console.log('data clean key', k)
-  //     console.log('data clean val', data_obj[k])
-  //     console.log('----------')
-  // 
-  //     if(typeof data_obj[k] == 'string'){
-  //       if(me._contains_credit(data_obj[k])) {
-  //         clean_obj[k] = 'XXXX'+data_obj[k].substring(data_obj[k].length-4, data_obj[k].length)
-  //       } else if(k == 'cvv') {
-  //         clean_obj[k] = 'XXXX'
-  //       } else {
-  //         clean_obj[k] = data_obj[k]
-  //       }
-  //     } else if(typeof data_obj[k] == 'object'){
-  //       clean_obj[k] = me._clean_object(data_obj[k])
-  //     } else if (typeof data_obj[k] == 'number' && k == 'status') {
-  //       clean_obj[k] = data_obj[k]
-  //     }
-  //   }
-  //   return clean_obj;
-  // }
-
-  this._contains_credit = function(d){
-    if(d.replace(/[\s-_.]/g,'').match(/\d{14,}/g)){
-      return true;
-    }
-
-    return false
-  }
-
+  
   this._format_phone_number = function(phone_number) {
     // \D stands for any non digit
     return phone_number.replace(/\D/g, '');
   }
 
   this._get_browser_info = function() {
+    
+    if(me.hmtMobile)
+      return { platform: 'hmtMobile' }
+    
     return {
       platform: navigator && navigator.platform ? navigator.platform : '',
       userAgent: navigator && navigator.userAgent ? navigator.userAgent : '',
       vendor: navigator && navigator.vendor ? navigator.vendor : '',
       vendorSub: navigator && navigator.vendorSub ? navigator.vendorSub : '',
     }
+    
   }
 
   this.country_codes = {

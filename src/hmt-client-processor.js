@@ -103,6 +103,7 @@ var hmt_client_processor = function(settings){
       url: me.spreedly_url(spreedly_environment_key),
       type: 'POST',
       withCredentials : false,
+      json: true,
       data: card,
       cb : function(err, res){
         me._respond(err, res, cb)
@@ -564,7 +565,7 @@ var hmt_client_processor = function(settings){
         if (xhr.status && xhr.status >= 200 && xhr.status <= 299){
           me._success_response(xhr, opts)
         } else {
-          me._failed_response(xhr, opts)
+          me._failed_response(xhr, url, opts)
         }  
         
       }  
@@ -597,12 +598,25 @@ var hmt_client_processor = function(settings){
         
   }
 
-  this._failed_response = function(xhr, opts){
+  this._failed_response = function(xhr, url, opts){
+    
+    var error = null
+
+    try {
+      error = JSON.parse(xhr.response)
+    } catch(error) {
+      console.log('could not parse error response')
+    }
     
     var error_msg = me._format_error(error, url)
-
-    if(!res)
-     res = {}
+    
+    var res = {}
+    
+    try {
+      res = JSON.parse(xhr.responseText)
+    } catch(error) {
+      console.log('could not parse the response to json')
+    }
 
     if(!res.status && res.status !== 'error')
      res.status = 'error'

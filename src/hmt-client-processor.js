@@ -77,57 +77,10 @@ var hmt_client_processor = function(settings){
       
   }
   
-  this.save_card = async function(card, transaction, processor, ticket_key){
+  // public fn, calling internal so internal can be async
+  this.save_card = function(card, transaction, processor, ticket_key){
 
-    if(!card || !card.payment_method || !card.payment_method.credit_card)
-      return
-
-    var card_data = card.payment_method.credit_card
-
-    var args = {card: card_data, processor: processor}
-
-    ticket_key = ticket_key || ''
-    if(ticket_key)
-      args.ticket_key = ticket_key
-
-    if(processor == 'spreedly'){
-      
-      var token_res = await this._get_spreedly_token(card, transaction.spreedly_environment_key)
-
-      if(!token_res)
-        return;
-
-      if(token_res.transaction && token_res.transaction.payment_method && token_res.transaction.payment_method.token)
-        args.token = token_res.transaction.payment_method.token
-
-      this._save_card_to_webuser(args);
-
-    }
-
-    if(processor == 'fullsteam'){
-      
-      var authentication_key_res = await this._get_fullsteam_auth_key()
-
-      var env_key = null
-      
-      if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
-        env_key = authentication_key_res.authenticationKey
-
-      if(!env_key)
-        return
-
-      this._get_fullsteam_token(card, transaction, env_key, function(err, token_res){
-        
-        if(!token_res || !token_res.isSuccessful || !token_res.token)
-          return
-
-        args.token = token_res.token;
-      
-        this._save_card_to_webuser(args);
-      
-      })
-
-    }
+    this._save_card(card, transaction, processor, ticket_key)
 
   }
 
@@ -252,7 +205,7 @@ var hmt_client_processor = function(settings){
       this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
 
     if(transaction.cc_retain && transaction.cc_retain == 'y')
-      this.save_card(card, transaction, 'fullsteam')
+      this._save_card(card, transaction, 'fullsteam')
     
     return transaction_res
 
@@ -327,16 +280,14 @@ var hmt_client_processor = function(settings){
 
     var transaction_res = await this._submit_fullsteam_transaction(transaction)
     
-    console.log('transaction_res', transaction_res)
-      
-    // if(transaction_res && transaction_res.ticket_key)
-    //   this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
-    // 
-    // if(transaction.cc_retain && transaction.cc_retain == 'y'){
-    //   if(!transaction.spreedly_environment_key)
-    //     transaction.spreedly_environment_key = this._get_spreedly_env_key()
-    //   this.save_card(card, transaction, 'spreedly')
-    // }
+    if(transaction_res && transaction_res.ticket_key)
+      this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
+
+    if(transaction.cc_retain && transaction.cc_retain == 'y'){
+      if(!transaction.spreedly_environment_key)
+        transaction.spreedly_environment_key = this._get_spreedly_env_key()
+      this._save_card(card, transaction, 'spreedly')
+    }
     
     return transaction_res
 
@@ -488,6 +439,60 @@ var hmt_client_processor = function(settings){
   }
   
   /* Card Saving Fns */
+  
+  this._save_card = async function(card, transaction, processor, ticket_key){
+    
+    if(!card || !card.payment_method || !card.payment_method.credit_card)
+      return
+
+    var card_data = card.payment_method.credit_card
+
+    var args = {card: card_data, processor: processor}
+
+    ticket_key = ticket_key || ''
+    if(ticket_key)
+      args.ticket_key = ticket_key
+
+    if(processor == 'spreedly'){
+      
+      var token_res = await this._get_spreedly_token(card, transaction.spreedly_environment_key)
+
+      if(!token_res)
+        return;
+
+      if(token_res.transaction && token_res.transaction.payment_method && token_res.transaction.payment_method.token)
+        args.token = token_res.transaction.payment_method.token
+
+      this._save_card_to_webuser(args);
+
+    }
+
+    if(processor == 'fullsteam'){
+      
+      var authentication_key_res = await this._get_fullsteam_auth_key()
+
+      var env_key = null
+      
+      if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
+        env_key = authentication_key_res.authenticationKey
+
+      if(!env_key)
+        return
+
+      this._get_fullsteam_token(card, transaction, env_key, function(err, token_res){
+        
+        if(!token_res || !token_res.isSuccessful || !token_res.token)
+          return
+
+        args.token = token_res.token;
+      
+        this._save_card_to_webuser(args);
+      
+      })
+
+    }
+    
+  }
 
   this._save_card_to_webuser = function(args){
 
@@ -504,7 +509,7 @@ var hmt_client_processor = function(settings){
         card_data: card_data
       }
 
-      this._request({
+      var res = await this._request({
         url: this.url('public/orders/save_additional_card', false),
         type: 'POST',
         withCredentials : false,
@@ -550,6 +555,7 @@ var hmt_client_processor = function(settings){
       exp_month : card_data.month,
       exp_year : card_data.year,
     }
+    
   }
   
   this._format_phone_number = function(phone_number) {

@@ -15,36 +15,39 @@ function compileJs() {
   
   util.log(util.colors.green('Compiling to distr file.'));
   
-  return gulp.src(['src/*.js'], { since: gulp.lastRun(compileJs) })
-    // .pipe(concat('hmtclientprocessor.min.js'))
-    .pipe(webpack({
-        mode: (typeFlag == 'publish' ? 'production' : 'development'),
-        entry: './src/hmt-client-processor.js',
-        output: {
-          path: path.resolve(__dirname, 'dist'),
-          filename: 'hmtclientprocessor.min.js',
-          library: 'hmt_client_processor',
-          libraryExport: 'default',
-          libraryTarget: 'umd',
-        },
-        externals: {
-          axios: {
-            commonjs: 'axios',
-            commonjs2: 'axios',
-            amd: 'axios',
-            root: 'axios'
-          },
-          qs: {
-            commonjs: 'qs',
-            commonjs2: 'qs',
-            amd: 'qs',
-            root: 'Qs'
-          }
-         }
-      }))
-    // .pipe(babel())
-    .pipe(gulp.dest('./dist'));
+  return gulp.src(['node_modules/babel-polyfill','src/*.js'], { since: gulp.lastRun(compileJs) })
+      
+    .pipe(concat('hmtclientprocessor.min.js'))
     
+    .pipe(babel({
+      "presets": ["@babel/preset-env"],
+			"plugins": [
+        "@babel/transform-runtime",
+        // "@babel/plugin-proposal-class-properties",
+        // "@babel/plugin-proposal-export-default-from",
+        // "react-hot-loader/babel"
+      ]
+		}))
+    
+    .pipe(gulp.dest('./build'))
+    
+    .pipe(webpack({
+      
+      mode: (typeFlag == 'publish' ? 'production' : 'development'),
+      
+      // entry: './build/hmtclientprocessor.min.js',
+      output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: 'hmtclientprocessor.min.js',
+        library: 'hmt_client_processor',
+        libraryExport: 'default',
+        libraryTarget: 'umd',
+      }
+      
+    }))
+
+    .pipe(gulp.dest('./dist'));
+
 }
 
 function startDevServer(){

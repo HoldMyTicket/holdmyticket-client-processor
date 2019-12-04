@@ -1,8 +1,19 @@
-import Qs from 'qs';
 
 var hmt_client_processor = function(settings){
 
-  var me = this
+  this.api_url = settings.api_url || '' // set when the script is loaded
+  this.api_url_suffix = settings.api_url_suffix || '' // set when the script is loaded
+  this.env = settings.env || '' // set when the script is loaded
+  this.app_type = settings.app_type || '' // set prior to submit (online | box)
+  this.isHmtMobile = settings.isHmtMobile || false
+  this.auth = settings.app_type == 'box' && settings.auth || ''
+  
+  this.errors_internal = [] // errors to handle internally
+  this.errors_processing = [] // errors to send back to clients regarding processing status
+
+  this.country_codes = {
+    '2':'US','3':'AI','4':'AR','5':'AU','6':'AT','7':'BE','8':'BR','9':'CA','10':'CL','11':'C2','12':'CR','13':'CY','14':'CZ','15':'DK','16':'DO','17':'EC','18':'EE','19':'FI','20':'FR','21':'DE','22':'GR','23':'HK','24':'HU','25':'IS','26':'IN','27':'IE','28':'IL','29':'IT','30':'JM','31':'JP','32':'LV','33':'LT','34':'LU','35':'MY','36':'MT','37':'MX','38':'NL','39':'NZ','40':'NO','41':'PL','42':'PT','43':'SG','44':'SK','45':'SI','46':'ZA','47':'KR','48':'ES','49':'SE','50':'CH','51':'TW','52':'TH','53':'TR','54':'GB','55':'UY','56':'VE','57':'PE','58':'GT','59':'SL','60':'AL','61':'DZ','62':'AD','63':'AO','64':'AG','65':'AM','66':'AW','67':'AZ','68':'BS','69':'BH','70':'BB','71':'BZ','72':'BJ','73':'BM','74':'BT','75':'BO','76':'BA','77':'BW','78':'VG','79':'BN','80':'BG','81':'BF','82':'BI','83':'KH','84':'CV','85':'KY','86':'TD','87':'CO','88':'KM','89':'CK','90':'HR','91':'CD','92':'DJ','93':'DM','94':'SV','95':'ER','96':'ET','97':'FK','98':'FO','99':'FM','100':'FJ','101':'GF','102':'PF','103':'GA','104':'GM','105':'GI','106':'GL','107':'GD','108':'GP','109':'GN','110':'GW','111':'GY','112':'HN','113':'ID','114':'JO','115':'KZ','116':'KE','117':'KI','118':'KW','119':'KG','120':'LA','121':'LS','122':'LI','123':'MG','124':'MW','125':'MV','126':'ML','127':'MH','128':'MQ','129':'MR','130':'MU','131':'YT','132':'MN','133':'MS','134':'MA','135':'MZ','136':'NA','137':'NR','138':'NP','139':'AN','140':'NC','141':'NI','142':'NE','143':'NU','144':'NF','145':'OM','146':'PW','147':'PA','148':'PG','149':'PH','150':'PN','151':'QA','152':'CG','153':'RE','154':'RO','155':'RU','156':'RW','157':'VC','158':'WS','159':'SM','160':'ST','161':'SA','162':'SN','163':'SC','164':'SB','165':'SO','166':'LK','167':'SH','168':'KN','169':'LC','170':'PM','171':'SR','172':'SJ','173':'SZ','174':'TJ','175':'TZ','176':'TG','177':'TO','178':'TT','179':'TN','180':'TM','181':'TC','182':'TV','183':'UG','184':'UA','185':'AE','186':'VU','187':'VA','188':'VN','189':'WF','190':'YE','191':'ZM'
+  }
 
   this.url = function(endpoint, use_suffix){
 
@@ -22,191 +33,51 @@ var hmt_client_processor = function(settings){
 
   }
   
+  /*
+  PUBLIC FUNCTIONS
+  */
+  
+  // main function that the client will call to submit transactions
   this.submit_transaction = function(card, transaction, cb){
-    this._remove_card_data()
     
-    // removing all phone special chars. Only allow numbers
-    if (transaction.phone) transaction.phone = this._format_phone_number(transaction.phone);
+    this._clear_state()
+    
+    transaction = this._prepare_transaction(transaction)
+    
+    var response = (result, cb, transaction) => {
+      
+      var error = !result ? true : false
+      var res = result ? result : { status: 'error', errors: this.errors_processing }
+      
+      // just pass back the cb_data here, and not everywhere else
+      if(transaction.cb_data)
+        res.cb_data = transaction.cb_data
 
+      // log the bad response here
+      if(error)
+        this._log_bad_trans(transaction, res)
+
+      this._respond(error, res, cb)
+      
+    }
+    
     // determine the method to use spreedly | fullsteam
-    if(transaction.processor_method == 'spreedly')
-      this._submit_spreedly(card, transaction, cb)
-    else if(transaction.processor_method == 'fullsteam')
-      this._submit_fullsteam(card, transaction, cb)
-    else
-      this._throw_error(true, {status: 'error', msg: 'No processing method setup'}, cb)
+    if(transaction.processor_method == 'spreedly'){
+      this._submit_spreedly(card, transaction, cb).then((result) => {
+        response(result, cb, transaction)
+      })
+    }else if(transaction.processor_method == 'fullsteam'){
+      this._submit_fullsteam(card, transaction, cb).then((result) => {
+        response(result, cb, transaction)
+      })
+    }else{
+      this._add_internal_error('No processing method setup')
+      response(false, cb)
+    }
       
   }
   
-  /* SPREEDLY */
-  
-  this._submit_spreedly = function(card, transaction, cb){
-
-    if (transaction.payment_token) {
-      me._submit_spreedly_transaction(transaction, function(err, transaction_res) {
-
-        if(transaction.cb_data)
-          transaction_res.cb_data = transaction.cb_data
-        
-        me._respond(err, transaction_res, cb);
-        
-      });
-    } else {
-      me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
-
-        if(err) {
-          if(transaction.cb_data)
-            token_res.cb_data = transaction.cb_data
-
-          me._respond(err, token_res, cb)
-          return;
-        }
-  
-        transaction.payment_token = token_res.transaction.payment_method.token
-
-        if(transaction.payments)
-          transaction.payments = me._update_payments_token(transaction.payments, transaction.payment_token)
-        
-        me._submit_spreedly_transaction(transaction, function(err, transaction_res){
-          
-          if(transaction.cb_data)
-            transaction_res.cb_data = transaction.cb_data
-          
-          if(!err && transaction_res.ticket_key)
-            me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
-
-          me._respond(err, transaction_res, cb)
-          
-        })
-        
-      })
-    }
-
-    if(transaction.cc_retain && transaction.cc_retain == 'y')
-        me.save_card(card, transaction, 'fullsteam')
-    
-  }
-
-  this._update_payments_token = function(payments, payment_token){
-    //for split payments we need the token
-    for(var i =0; i < payments.length; i++){
-      var payment = payments[i]
-      if(payment.type == 'credit')
-        payments[i].payment_token = payment_token
-    }
-    return payments
-  }
-  
-  this._get_spreedly_token = function(card, spreedly_environment_key, cb){
-
-    me._request({
-      url: me.spreedly_url(spreedly_environment_key),
-      type: 'POST',
-      withCredentials : false,
-      json: true,
-      data: card,
-      cb : function(err, res){
-        me._respond(err, res, cb)
-      }
-    })
-    
-  }
-  
-  this._submit_spreedly_transaction = function(transaction, cb){
-    transaction = me._remove_sensitive_card_data(transaction)
-    
-    me._request({
-      url: me.url('shop/carts/submit', true),
-      type: 'POST',
-      data: transaction,
-      form_encoded: true,
-      withCredentials: true,
-      cb : function(err, res){
-        me._respond(err, res, cb)
-      }
-    })
-    
-  }
-  
-  /* FULLSTEAM */
-  
-  this._submit_fullsteam = function(card, transaction, cb){
-    
-    if (transaction.payment_token) {
-
-      me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
-        
-        if(transaction.cb_data)
-          transaction_res.cb_data = transaction.cb_data
-
-        me._respond(err, transaction_res, cb)
-    
-      })
-
-    } else {
-      me._get_fullsteam_auth_key(function(err, authentication_key_res){
-
-        var auth_key = null
-        
-        if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
-          auth_key = authentication_key_res.authenticationKey
-        
-        // TODO validate the key
-        
-        me._get_fullsteam_token(card, transaction, auth_key, function(err, token_res){
-          
-          // TODO validate the token
-          
-          if(!token_res || !token_res.isSuccessful || !token_res.token){
-          
-            if(transaction.cb_data)
-              token_res.cb_data = transaction.cb_data
-
-            return me._handle_fullsteam_error(token_res, cb)
-          }
-  
-          transaction.payment_token = token_res.token
-
-          if(transaction.payments)
-            transaction.payments = me._update_payments_token(transaction.payments, transaction.payment_token)
-        
-          me._submit_fullsteam_transaction(transaction, function(err, transaction_res){
-            
-            if(transaction.cb_data) 
-              transaction_res.cb_data = transaction.cb_data
-            
-            if(!err && transaction_res.ticket_key)
-              me._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
-            
-            me._respond(err, transaction_res, cb)
-        
-          })
-        
-        })
-  
-      })
-    }
-
-    if(transaction.cc_retain && transaction.cc_retain == 'y'){
-      if(!transaction.spreedly_environment_key){
-        transaction.spreedly_environment_key = me._get_spreedly_env_key()
-      }
-      me.save_card(card, transaction, 'spreedly')
-    }
-
-  }
-
-  this._get_spreedly_env_key = function(){
-    if(this.spreedly_environment_key)
-      return this.spreedly_environment_key
-
-    if(config && config.spreedly_environment_key)
-      return config.spreedly_environment_key
-
-    return ''
-  }
-
-  this.save_card = function(card, transaction, processor, ticket_key){
+  this.save_card = async function(card, transaction, processor, ticket_key){
 
     if(!card || !card.payment_method || !card.payment_method.credit_card)
       return
@@ -220,40 +91,40 @@ var hmt_client_processor = function(settings){
       args.ticket_key = ticket_key
 
     if(processor == 'spreedly'){
-      me._get_spreedly_token(card, transaction.spreedly_environment_key, function(err, token_res){
-        if(err) {
-          return;
-        }
-        if(token_res.transaction && token_res.transaction.payment_method && token_res.transaction.payment_method.token)
-          args.token = token_res.transaction.payment_method.token
+      
+      var token_res = await this._get_spreedly_token(card, transaction.spreedly_environment_key)
 
-        me._save_card_to_webuser(args);
-        
-      })
+      if(!token_res)
+        return;
+
+      if(token_res.transaction && token_res.transaction.payment_method && token_res.transaction.payment_method.token)
+        args.token = token_res.transaction.payment_method.token
+
+      this._save_card_to_webuser(args);
+
     }
 
     if(processor == 'fullsteam'){
-      me._get_fullsteam_auth_key(function(err, authentication_key_res){
+      
+      var authentication_key_res = await this._get_fullsteam_auth_key()
 
       var env_key = null
       
       if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
         env_key = authentication_key_res.authenticationKey
 
-        if(!env_key)
+      if(!env_key)
+        return
+
+      this._get_fullsteam_token(card, transaction, env_key, function(err, token_res){
+        
+        if(!token_res || !token_res.isSuccessful || !token_res.token)
           return
 
-        me._get_fullsteam_token(card, transaction, env_key, function(err, token_res){
-          
-          if(!token_res || !token_res.isSuccessful || !token_res.token)
-            return
-
-          args.token = token_res.token;
-        
-          me._save_card_to_webuser(args);
-        
-        })
-
+        args.token = token_res.token;
+      
+        this._save_card_to_webuser(args);
+      
       })
 
     }
@@ -262,9 +133,10 @@ var hmt_client_processor = function(settings){
 
   this.webuser_save_card = function(card, data, webuser_id, cb) {
 
-		me._get_spreedly_token(card, data.spreedly_environment_key, function(err, token_res) {
+		this._get_spreedly_token(card, data.spreedly_environment_key, function(err, token_res) {
+      
 			if (err) {
-				me._respond(err, token_res, cb);
+				this._respond(err, token_res, cb);
 				return;
 			}
 
@@ -274,8 +146,8 @@ var hmt_client_processor = function(settings){
         vault: 'spreedly'
 			};
 
-			me._request({
-				url: me.url('public/users/save_credit_card', false),
+			this._request({
+				url: this.url('public/users/save_credit_card', false),
 				type: 'POST',
 				withCredentials : false,
 				data: request_data,
@@ -285,10 +157,11 @@ var hmt_client_processor = function(settings){
             res = res.data
 
           if(!res || !res.status || res.status != 'ok'){
-            return me._respond(err, res, cb);
+            return this._respond(err, res, cb);
           }
 
-					me._get_fullsteam_auth_key(function(err, authentication_key_res) {
+					this._get_fullsteam_auth_key(function(err, authentication_key_res) {
+            
 						var env_key = null;
 
 						if (
@@ -299,18 +172,18 @@ var hmt_client_processor = function(settings){
 						)
 							env_key = authentication_key_res.authenticationKey;
 
-
 						if (!env_key) return;
 
             if(!data.zip && card.payment_method.credit_card.zip)
               data.zip = card.payment_method.credit_card.zip
 
-
-						me._get_fullsteam_token(card, data, env_key, function(err, token_res) {
-							if (!token_res || !token_res.isSuccessful || !token_res.token) return me._respond(err, token_res, cb);
+						this._get_fullsteam_token(card, data, env_key, function(err, token_res) {
+              
+							if (!token_res || !token_res.isSuccessful || !token_res.token)
+                return this._respond(err, token_res, cb);
 
 							var card_data = card.payment_method.credit_card
-								? me._format_card_for_save(card.payment_method.credit_card)
+								? this._format_card_for_save(card.payment_method.credit_card)
 								: null;
 
 							var data = {
@@ -320,120 +193,167 @@ var hmt_client_processor = function(settings){
 								card_data: card_data
 							};
 
-							me._request({
-								url: me.url('public/users/save_additional_card', false),
+							this._request({
+								url: this.url('public/users/save_additional_card', false),
 								type: 'POST',
 								withCredentials : false,
 								data: data,
 								form_encoded: true,
 								cb : function(err, res) {
-									me._respond(err, res, cb);
+									this._respond(err, res, cb);
 								}
 							});
+              
 						});
+            
 					});
+          
 				}
 			});
 		});
-	}
-
-  this._save_card_to_webuser = function(args){
-
-    me._remember_card_data(args)
-
-    var card_data = me.card_data ? me._format_card_for_save(me.card_data) : null
-
-    if(me.card_ticket_key && card_data && me.card_token && me.card_processor){
-
-      var data = {
-        ticket_key: me.card_ticket_key,
-        vault: me.card_processor,
-        token: me.card_token,
-        card_data: card_data
-      }
-
-      me._request({
-        url: me.url('public/orders/save_additional_card', false),
-        type: 'POST',
-        withCredentials : false,
-        data: data,
-        form_encoded: true,
-        cb : function(err, res){
-          // me._respond(err, res, cb)
-        }
-      })
-    }
-
-  }
-
-  this._format_card_for_save = function(card_data){
     
-    if(!card_data.full_name)
-      return false
-    if(!card_data.month)
-      return false
-    if(!card_data.year)
-      return false
-    if(!card_data.number)
-      return false
+	}
+  
+  /*
+  PRIVATE FUNCTIONS
+  */
+  
+  /* SPREEDLY */  
+  
+  this._get_spreedly_env_key = function(){
+    
+    if(this.spreedly_environment_key)
+      return this.spreedly_environment_key
 
-    return {
-      full_name : card_data.full_name,
-      last_four : me._get_last_four(card_data.number),
-      exp_month : card_data.month,
-      exp_year : card_data.year,
-    }
-  }
+    if(config && config.spreedly_environment_key)
+      return config.spreedly_environment_key
 
-  this._get_last_four = function(cc_num){
-    return cc_num.substr(cc_num.length - 4)
-  }
-
-  this._remember_card_data = function(args){
-
-    if(args.card)
-      me.card_data = args.card
-    if(args.token)
-      me.card_token = args.token
-    if(args.processor)
-      me.card_processor = args.processor
-    if(args.ticket_key)
-      me.card_ticket_key = args.ticket_key
-  }
-
-  this._remove_card_data = function(){
-
-    delete me.card_data
-    delete me.card_token
-    delete me.processor
-    delete me.card_ticket_key
-  }
-
-  this._remove_sensitive_card_data = function(data){
-
-    delete data.cc_no
-    delete data.cc_cvc
-    delete data.cc_expiry
-    delete data.cc_name
-    delete data.encryptedTrack1
-    delete data.encryptedTrack2
-    delete data.ksn
-
-    return data
+    return ''
+    
   }
   
-  this._get_fullsteam_auth_key = function(cb){
+  this._submit_spreedly = async function(card, transaction){
+
+    // saved payment tokens can be submitted without needing to create a token, simply submit payment token
+    if (transaction.payment_token)
+      return await this._submit_spreedly_transaction(transaction)
+
+    // if no token, then lets get token from spreedly and 
+    var token_res = await this._get_spreedly_token(card, transaction.spreedly_environment_key)
     
-    me._request({
-      url: this.url('shop/processors/get_authentication_key', true),
-      cb : function(err, res){
-        me._respond(err, res, cb)
-      }
+    if(!token_res || !token_res.transaction || !token_res.transaction.payment_method || !token_res.transaction.payment_method.token)
+      return this._add_internal_error('Spreedly, Could not get token');
+
+    transaction.payment_token = token_res.transaction.payment_method.token
+
+    var transaction_res = await this._submit_spreedly_transaction(transaction)
+    
+    if(transaction_res && transaction_res.ticket_key)
+      this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
+
+    if(transaction.cc_retain && transaction.cc_retain == 'y')
+      this.save_card(card, transaction, 'fullsteam')
+    
+    return transaction_res
+
+  }
+  
+  this._get_spreedly_token = async function(card, spreedly_environment_key, cb){
+
+    var token = await this._request({
+      url: this.spreedly_url(spreedly_environment_key),
+      type: 'POST',
+      withCredentials: false,
+      json: true,
+      data: card
     })
+    
+    if(token.errors && token.errors.length > 0){
+      for(key in token.errors)
+        this._add_processing_error(token.errors[key].message)
+    }
+
+    return token
+    
+  }
+  
+  this._submit_spreedly_transaction = async function(transaction, cb){
+    
+    if(transaction.payments)
+      transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
+    
+    transaction = this._remove_sensitive_card_data(transaction)
+    
+    var transaction_res = await this._request({
+      url: this.url('shop/carts/submit', true),
+      type: 'POST',
+      data: transaction,
+      form_encoded: true,
+      withCredentials: true
+    })
+
+    return transaction_res
+
+  }
+  
+  /* FULLSTEAM */
+
+  this._submit_fullsteam = async function(card, transaction, cb){
+    
+    // saved payment tokens can be submitted without needing to create a token, simply submit payment token
+    if (transaction.payment_token)
+      return await this._submit_fullsteam_transaction(transaction)
+        
+    var authentication_key_res = await this._get_fullsteam_auth_key()
+    
+    var auth_key = null
+    
+    if(authentication_key_res && 
+      authentication_key_res.status && 
+      authentication_key_res.status == 'ok' && 
+      authentication_key_res.authenticationKey
+    )
+      auth_key = authentication_key_res.authenticationKey
+      
+    var token_res = await this._get_fullsteam_token(card, transaction, auth_key)
+    
+    if(!token_res || !token_res.isSuccessful)
+      return false
+
+    transaction.payment_token = token_res.token
+
+    if(transaction.payments)
+      transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
+
+    var transaction_res = await this._submit_fullsteam_transaction(transaction)
+    
+    console.log('transaction_res', transaction_res)
+      
+    // if(transaction_res && transaction_res.ticket_key)
+    //   this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
+    // 
+    // if(transaction.cc_retain && transaction.cc_retain == 'y'){
+    //   if(!transaction.spreedly_environment_key)
+    //     transaction.spreedly_environment_key = this._get_spreedly_env_key()
+    //   this.save_card(card, transaction, 'spreedly')
+    // }
+    
+    return transaction_res
+
+  }
+
+  this._get_fullsteam_auth_key = async function(){
+    
+    var token_res = await this._request({
+      url: this.url('shop/processors/get_authentication_key', true),
+    })
+    
+    return token_res
     
   }
 
-  this._get_fullsteam_token = function(card, transaction, auth_key, cb){
+  this._get_fullsteam_token = async function(card, transaction, auth_key, cb){
+    
     if(
       !card || 
       !card.payment_method || 
@@ -444,10 +364,10 @@ var hmt_client_processor = function(settings){
       !card.payment_method.credit_card.full_name || 
       !card.payment_method.credit_card.verification_value
     ){
-      cb(true, 'Missing required card inputs')
-      return
+      this._add_processing_error('Missing required card inputs')
+      return false
     }
-    
+
     var data = {
       "clearTextCardData": {
         "cardNumber": card.payment_method.credit_card.number.replace(/\s/g, ''),
@@ -463,7 +383,7 @@ var hmt_client_processor = function(settings){
           "city": transaction.city || null,
           "state": transaction.state || null,
           "zip": transaction.zip || (this.app_type  == 'box' ? '00000' : null),
-          "country": me._get_fullsteam_contry_code(transaction),
+          "country": this._get_fullsteam_contry_code(transaction),
           "phone": transaction.phone || null,
           "email": transaction.email || null,
         }
@@ -475,7 +395,7 @@ var hmt_client_processor = function(settings){
     if(transaction.country_id && transaction.country_id != '2')
       delete data.clearTextCardData.billingInformation.state
     
-    me._request({
+    var res = await this._request({
       url: this.fullsteam_url() + 'api/token/card/clearText/create',
       type: 'POST',
       cors: true,
@@ -483,98 +403,298 @@ var hmt_client_processor = function(settings){
       data: data,
       json: true,
       withCredentials : false,
-      auth_key: auth_key,
-      cb : function(err, res){
-        me._respond(err, res, cb)
-      }      
+      auth_key: auth_key
     })
+    
+    // handle any processing errors here
+    if(!res || !res.isSuccessful){
+      
+      this._add_internal_error('Fullsteam, Could not get token')
+      
+      var msg = ''
+      
+      if(res && res.responseDetails){
+        for(var key in res.responseDetails)
+          this._add_processing_error(res.responseDetails[key].message)
+      }
+
+      if(res && res.issuerResponseDetails){
+        
+        var issuerResponseCode = res.issuerResponseDetails.issuerResponseCode || 0
+        var issuerResponseDescription = res.issuerResponseDetails.issuerResponseDescription || ''
+        var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode && ['M', 'P'].indexOf(res.issuerResponseDetails.cvvResponseCode) == -1 ? res.issuerResponseDetails.cvvResponseCode : 0
+        var CVVResponseDescription =  CVVResponseCode && res.issuerResponseDetails.cvvResponseDescription ? res.issuerResponseDetails.cvvResponseDescription : ''
+        //we only look for cvv not M (match), P (not processed) cvv
+
+        if(CVVResponseDescription){
+          
+          msg = "CVV Error: "+CVVResponseDescription; //takes precedence
+          
+        } else {
+          
+          if(msg == '' && issuerResponseDescription)
+            msg = "Error: "+issuerResponseDescription
+
+          if(msg == '' && (!issuerResponseCode || issuerResponseCode == '00'))
+            msg = "CPE2: Missing error code"
+
+          if(msg == '') 
+            msg = "CPE3: Unknown issuer error"
+
+        }
+        
+      }
+
+      if(msg == '')
+        msg = 'CPE4: Unknown processor error'
+        
+      this._add_processing_error(msg)
+    
+      return false
+    
+    }
+    
+    return res
 
   }
   
-  this._submit_fullsteam_transaction = function(transaction, cb){
-    transaction = me._remove_sensitive_card_data(transaction)
-
-    me._request({
+  this._submit_fullsteam_transaction = async function(transaction, cb){
+    
+    transaction = this._remove_sensitive_card_data(transaction)
+    
+    var transaction_res = await this._request({
       url: this.url('shop/carts/submit', true),
       type: 'POST',
       data: transaction,
       form_encoded: true,
-      withCredentials: true,
-      cb : function(err, json){
-        me._respond(err, json, cb)
+      withCredentials: true
+    })
+
+    return transaction_res
+    
+  }
+  
+  this._get_fullsteam_contry_code = function(transaction){
+    
+    //country_id from HMT. return intnl country_code
+
+    var hmt_country_id = transaction.country_id || '2'
+
+    if(this.country_codes && this.country_codes[hmt_country_id])
+      return this.country_codes[hmt_country_id]
+
+    return 'US';
+    
+  }
+  
+  /* Card Saving Fns */
+
+  this._save_card_to_webuser = function(args){
+
+    this._remember_card_data(args)
+
+    var card_data = this.card_data ? this._format_card_for_save(this.card_data) : null
+
+    if(this.card_ticket_key && card_data && this.card_token && this.card_processor){
+
+      var data = {
+        ticket_key: this.card_ticket_key,
+        vault: this.card_processor,
+        token: this.card_token,
+        card_data: card_data
       }
+
+      this._request({
+        url: this.url('public/orders/save_additional_card', false),
+        type: 'POST',
+        withCredentials : false,
+        data: data,
+        form_encoded: true
+      })
+      
+    }
+
+  }
+  
+
+  /*
+  Utilities
+  */
+
+  this._update_payments_token = function(payments, payment_token){
+    
+    //for split payments we need the token
+    for(var i =0; i < payments.length; i++){
+      var payment = payments[i]
+      if(payment.type == 'credit')
+        payments[i].payment_token = payment_token
+    }
+    return payments
+    
+  }
+
+  this._format_card_for_save = function(card_data){
+    
+    if(!card_data.full_name)
+      return false
+    if(!card_data.month)
+      return false
+    if(!card_data.year)
+      return false
+    if(!card_data.number)
+      return false
+
+    return {
+      full_name : card_data.full_name,
+      last_four : this._get_last_four(card_data.number),
+      exp_month : card_data.month,
+      exp_year : card_data.year,
+    }
+  }
+  
+  this._format_phone_number = function(phone_number) {
+
+    // \D stands for any non digit
+    return phone_number.replace(/\D/g, '');
+    
+  }
+
+  this._get_last_four = function(cc_num){
+    
+    return cc_num.substr(cc_num.length - 4)
+    
+  }
+
+  this._remember_card_data = function(args){
+
+    if(args.card)
+      this.card_data = args.card
+    if(args.token)
+      this.card_token = args.token
+    if(args.processor)
+      this.card_processor = args.processor
+    if(args.ticket_key)
+      this.card_ticket_key = args.ticket_key
+      
+  }
+
+  this._clear_state = function(){
+    
+    this.errors_internal = []
+    this.errors_processing = []
+
+    delete this.card_data
+    delete this.card_token
+    delete this.processor
+    delete this.card_ticket_key
+    
+  }
+
+  this._remove_sensitive_card_data = function(data){
+
+    delete data.cc_no
+    delete data.cc_cvc
+    delete data.cc_expiry
+    delete data.cc_name
+    delete data.encryptedTrack1
+    delete data.encryptedTrack2
+    delete data.ksn
+
+    return data
+    
+  }
+  
+  /* 
+  Main Request Fn
+  */
+  
+  this._request = async function(opts){
+
+    return new Promise((resolve, reject) => {
+
+      // default
+      var headers = {}
+      
+      if(opts.json)
+        headers['content-type'] = 'application/json;charset=UTF-8'
+      
+      if(opts.form_encoded){
+        headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
+        
+        if (opts.data.payments) {
+          
+          var payments = opts.data.payments;
+          delete opts.data.payments;
+
+          var stringifiedPostData = this._serializer(opts.data);
+          var stringifiedPayments = this._serializer({ payments: payments });
+          stringifiedPostData = stringifiedPostData + '&' + stringifiedPayments;
+          
+        } else {
+          
+          var stringifiedPostData = this._serializer(opts.data);
+          
+        }
+        
+        opts.data = stringifiedPostData;
+        
+      }
+
+      if(opts.auth_key)
+        headers['authenticationKey'] = opts.auth_key
+
+      var url = opts.url
+
+      var data
+      
+      if(opts.data)
+        data = opts.data
+
+      if(this.auth && this.app_type == 'box' && url.indexOf('submit') > -1){
+        url += (url.indexOf('?') > -1 ? '&' : '?') + 'auth='+this.auth
+        if(typeof data == 'object')
+          data.can_handle_fullsteam = 'true'
+        if(typeof data == 'string')
+          data += '&can_handle_fullsteam=true'
+      }
+
+      if(opts.json)
+        data = JSON.stringify(data)
+
+      // build the xhr request
+      var xhr = new XMLHttpRequest();
+      xhr.open(opts.type || 'GET', url);
+      xhr.withCredentials = opts.withCredentials || false;
+      
+      for(key in headers)
+        xhr.setRequestHeader(key, headers[key])
+        
+      xhr.onreadystatechange = (evt) => {
+        
+        if (xhr.readyState === 4){
+
+          this._logger(url, data, xhr, opts)
+
+          if (xhr.status && xhr.status >= 200 && xhr.status <= 299)
+            resolve(this._xhr_success(xhr))
+          else
+            resolve(this._xhr_fail(xhr, url))
+          
+        }
+        
+      }
+      
+      xhr.send(data)
+    
     })
     
   }
   
-  this._request = function(opts){
-
-    // default
-    var headers = {}
-    
-    if(opts.json)
-      headers['content-type'] = 'application/json;charset=UTF-8'
-    
-    if(opts.form_encoded){
-      headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-      
-      if (opts.data.payments) {
-        var payments = opts.data.payments;
-        delete opts.data.payments;
-
-        var stringifiedPostData = Qs.stringify(opts.data, { arrayFormat: 'repeat' });
-        var stringifiedPayments = Qs.stringify({ payments: payments });
-        stringifiedPostData = stringifiedPostData + '&' + stringifiedPayments;
-      } else {
-        var stringifiedPostData = Qs.stringify(opts.data, { arrayFormat: 'repeat' });
-      }
-      
-      opts.data = stringifiedPostData;
-    }
-
-    if(opts.auth_key)
-      headers['authenticationKey'] = opts.auth_key
-
-    var url = opts.url
-
-    var data;
-    if(opts.data)
-      data = opts.data
-
-    if(this.auth && this.app_type == 'box' && url.indexOf('submit') > -1){
-      url += (url.indexOf('?') > -1 ? '&' : '?') + 'auth='+this.auth
-      if(typeof data == 'object')
-        data.can_handle_fullsteam = 'true'
-      if(typeof data == 'string')
-        data += '&can_handle_fullsteam=true'
-    }
-
-    if(opts.json)
-      data = JSON.stringify(data)
-
-    var xhr = new XMLHttpRequest();
-    xhr.open(opts.type || 'GET', url, true);
-    xhr.withCredentials = opts.withCredentials || false;
-    for(key in headers)
-      xhr.setRequestHeader(key, headers[key])
-    xhr.onreadystatechange = function (evt) {
-      if (xhr.readyState === 4){
-
-        me._logger(url, data, xhr, opts)
-
-        if (xhr.status && xhr.status >= 200 && xhr.status <= 299){
-          me._success_response(xhr, opts)
-        } else {
-          me._failed_response(xhr, url, opts)
-        }  
-        
-      }  
-    }; 
-    xhr.send(data)
-    
-  }
+  /* 
+  Request Responses 
+  */
   
-  this._success_response = function(xhr, opts){
+  this._xhr_success = function(xhr, opts){
     
     var res = {}
     
@@ -590,25 +710,22 @@ var hmt_client_processor = function(settings){
 
     // react native seems to have a bug where the statusText comes through as undefined
     // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
-    if (me.isHmtMobile && !res.statusText)
+    if (this.isHmtMobile && !res.statusText)
       res.statusText = 'OK';
   
-    if(opts.cb)
-      opts.cb(null, res)  
+    return res
         
   }
 
-  this._failed_response = function(xhr, url, opts){
+  this._xhr_fail = function(xhr, url, opts){
     
     var error = null
-
+    
     try {
       error = JSON.parse(xhr.response)
     } catch(error) {
       console.log('could not parse error response')
     }
-    
-    var error_msg = me._format_error(error, url)
     
     var res = {}
     
@@ -622,84 +739,15 @@ var hmt_client_processor = function(settings){
      res.status = 'error'
 
     res.statusText = xhr.statusText ? xhr.statusText : 'ERROR'
-    res.msg = error_msg
-    // res.axiosErrorMsg = error.message
 
-    if(opts.cb)
-      opts.cb(error, res)
+    return res
 
   }
 
-  this._format_error = function(error, processor_url) {
-    if(processor_url.indexOf('core.spreedly.com') != -1){
-      return this._format_spreedly_error(error)
-    } else {
-      return this._format_fullsteam_error(error)
-    }
-  }
-
-  this._format_spreedly_error = function(error){
-    var res = null;
-    if(error.response && error.response.data && error.response.data.errors) {
-      var error_msg = 'Processing Error:<br>';
-      for(var i =0; i < error.response.data.errors.length; i++ ){
-        var err = error.response.data.errors[i]
-        error_msg += err.message ? '- '+err.message+"<br>" : ''
-      }
-      return error_msg
-    }
-
-    return 'CPE5: Unknown error'
-
-  }
-
-  this._format_fullsteam_error = function(error){
-    return error && error.msg ? error.msg : 'CPE6: Unknown error'
-  }
-  
-  this._handle_fullsteam_error = function(res, cb){
-    
-    var msg = ''
-    
-    if(res && res.responseDetails){
-      for(var key in res.responseDetails)
-        msg += res.responseDetails[key].message+"\n\n"
-    }
-
-    if(res && res.issuerResponseDetails){
-      var issuerResponseCode = res.issuerResponseDetails.issuerResponseCode || 0
-      var issuerResponseDescription = res.issuerResponseDetails.issuerResponseDescription || ''
-      var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode && ['M', 'P'].indexOf(res.issuerResponseDetails.cvvResponseCode) == -1 ? res.issuerResponseDetails.cvvResponseCode : 0
-      var CVVResponseDescription =  CVVResponseCode && res.issuerResponseDetails.cvvResponseDescription ? res.issuerResponseDetails.cvvResponseDescription : ''
-      //we only look for cvv not M (match), P (not processed) cvv
-
-      if(CVVResponseDescription){
-        msg = "CVV Error: "+CVVResponseDescription; //takes precedence
-      } else {
-        if(msg == '' && issuerResponseDescription)
-          msg = "Error: "+issuerResponseDescription
-
-        if(msg == '' && (!issuerResponseCode || issuerResponseCode == '00'))
-          msg = "CPE2: Missing error code"
-
-        if(msg == '') 
-          msg = "CPE3: Unknown issuer error"
-
-      };
-    };
-
-    msg = msg || "CPE4: Unknown processor error"
-
-    res.msg = msg;
-    
-    return me._throw_error(true, res, cb)
-    
-  }
-  
   this._respond = function(err, res, cb){
 
     if(err || !res || res.status == 'error'){
-      me._throw_error(err, res, cb)
+      this._throw_error(err, res, cb)
       return
     }
 
@@ -724,17 +772,6 @@ var hmt_client_processor = function(settings){
     if(cb)
       cb(err, res)
     
-  }
-
-  this._get_fullsteam_contry_code = function(transaction){
-    //country_id from HMT. return intnl country_code
-
-    var hmt_country_id = transaction.country_id || '2'
-
-    if(me.country_codes && me.country_codes[hmt_country_id])
-      return me.country_codes[hmt_country_id]
-
-    return 'US';
   }
 
   this._logger = function(url, data, xhr, opts){
@@ -762,19 +799,44 @@ var hmt_client_processor = function(settings){
           statusText: xhr.statusText ? xhr.statusText : null,
           timeout: xhr.timeout ? xhr.timeout : null
         },
-        browser_info: me._get_browser_info()
+        browser_info: this._get_browser_info()
       })
       
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', me.url('shop/processors/logme2342311', true), true);
+      xhr.open('POST', this.url('shop/processors/logme2342311', true), true);
       xhr.withCredentials = true
       xhr.setRequestHeader('content-type', 'application/json;charset=UTF-8')
       xhr.send(JSON.stringify(log))
 
     } catch(error) {
       // console.error so we can reference this in FullStory
-      console.warn('CPE7 Logger Warn', url, data, xhr)
       console.error('CPE7 Logger Error', error);
+    }
+
+  }
+
+  this._log_bad_trans = function(transaction, response){
+
+    try {
+      
+      var data = {
+        transaction: transaction ? transaction : null,
+        response: response ? response : null,
+        errors_internal: this.errors_internal,
+        errors_processing: this.errors_processing,
+        is_hmt_front_error: true
+      }
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', this.url('shop/carts/log_bad_trans', true), true);
+      xhr.withCredentials = true
+      xhr.setRequestHeader('content-type', 'application/json;charset=UTF-8')
+      xhr.send(JSON.stringify(data))
+    
+    } catch(error) {
+
+      console.warn('Could not log bad trans')
+
     }
 
   }
@@ -790,14 +852,9 @@ var hmt_client_processor = function(settings){
 
   }
   
-  this._format_phone_number = function(phone_number) {
-    // \D stands for any non digit
-    return phone_number.replace(/\D/g, '');
-  }
-
   this._get_browser_info = function() {
     
-    if(me.hmtMobile)
+    if(this.hmtMobile)
       return { platform: 'hmtMobile' }
     
     return {
@@ -809,23 +866,48 @@ var hmt_client_processor = function(settings){
     
   }
 
-  this.country_codes = {
-    '2':'US','3':'AI','4':'AR','5':'AU','6':'AT','7':'BE','8':'BR','9':'CA','10':'CL','11':'C2','12':'CR','13':'CY','14':'CZ','15':'DK','16':'DO','17':'EC','18':'EE','19':'FI','20':'FR','21':'DE','22':'GR','23':'HK','24':'HU','25':'IS','26':'IN','27':'IE','28':'IL','29':'IT','30':'JM','31':'JP','32':'LV','33':'LT','34':'LU','35':'MY','36':'MT','37':'MX','38':'NL','39':'NZ','40':'NO','41':'PL','42':'PT','43':'SG','44':'SK','45':'SI','46':'ZA','47':'KR','48':'ES','49':'SE','50':'CH','51':'TW','52':'TH','53':'TR','54':'GB','55':'UY','56':'VE','57':'PE','58':'GT','59':'SL','60':'AL','61':'DZ','62':'AD','63':'AO','64':'AG','65':'AM','66':'AW','67':'AZ','68':'BS','69':'BH','70':'BB','71':'BZ','72':'BJ','73':'BM','74':'BT','75':'BO','76':'BA','77':'BW','78':'VG','79':'BN','80':'BG','81':'BF','82':'BI','83':'KH','84':'CV','85':'KY','86':'TD','87':'CO','88':'KM','89':'CK','90':'HR','91':'CD','92':'DJ','93':'DM','94':'SV','95':'ER','96':'ET','97':'FK','98':'FO','99':'FM','100':'FJ','101':'GF','102':'PF','103':'GA','104':'GM','105':'GI','106':'GL','107':'GD','108':'GP','109':'GN','110':'GW','111':'GY','112':'HN','113':'ID','114':'JO','115':'KZ','116':'KE','117':'KI','118':'KW','119':'KG','120':'LA','121':'LS','122':'LI','123':'MG','124':'MW','125':'MV','126':'ML','127':'MH','128':'MQ','129':'MR','130':'MU','131':'YT','132':'MN','133':'MS','134':'MA','135':'MZ','136':'NA','137':'NR','138':'NP','139':'AN','140':'NC','141':'NI','142':'NE','143':'NU','144':'NF','145':'OM','146':'PW','147':'PA','148':'PG','149':'PH','150':'PN','151':'QA','152':'CG','153':'RE','154':'RO','155':'RU','156':'RW','157':'VC','158':'WS','159':'SM','160':'ST','161':'SA','162':'SN','163':'SC','164':'SB','165':'SO','166':'LK','167':'SH','168':'KN','169':'LC','170':'PM','171':'SR','172':'SJ','173':'SZ','174':'TJ','175':'TZ','176':'TG','177':'TO','178':'TT','179':'TN','180':'TM','181':'TC','182':'TV','183':'UG','184':'UA','185':'AE','186':'VU','187':'VA','188':'VN','189':'WF','190':'YE','191':'ZM'
+  // deep serialize object to form data
+  this._serializer = function(obj){
+
+    var pairs = [];
+    for (var prop in obj) {
+        if (!obj.hasOwnProperty(prop)) {
+            continue;
+        }
+        if (Object.prototype.toString.call(obj[prop]) == '[object Object]') {
+            pairs.push(this._serializer(obj[prop]));
+            continue;
+        }
+        pairs.push(prop + '=' + obj[prop]);
+    }
+    
+    return pairs.join('&');
+
   }
 
-  this.api_url = settings.api_url || '' // set when the script is loaded
+  // prepare the transaction data prior to submitting
+  this._prepare_transaction = function(transaction){
+    
+    // removing all phone special chars. Only allow numbers
+    if (transaction.phone)
+      transaction.phone = this._format_phone_number(transaction.phone);
+    
+    return transaction
+    
+  }
 
-  this.api_url_suffix = settings.api_url_suffix || '' // set when the script is loaded
+  // add a internal error
+  this._add_internal_error = function(err){
+    this.errors_internal.push(err)
+    return false
+  }
 
-  this.env = settings.env || '' // set when the script is loaded
-  
-  this.app_type = settings.app_type || '' // set prior to submit (online | box)
+  // add a processing error
+  this._add_processing_error = function(err){
+    this.errors_processing.push(err)
+    return false
+  }
 
-  this.isHmtMobile = settings.isHmtMobile ||  false
-
-  this.auth = settings.app_type == 'box' && settings.auth || ''
-
-  
 }
 
 export default hmt_client_processor;

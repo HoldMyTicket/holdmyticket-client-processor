@@ -36,6 +36,14 @@ function compileJs() {
       mode: (typeFlag == 'publish' ? 'production' : 'development'),
       
       // entry: './build/hmtclientprocessor.min.js',
+      externals: {
+        qs: {
+          commonjs: 'qs',
+          commonjs2: 'qs',
+          amd: 'qs',
+          root: 'Qs'
+        }
+      },
       output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'hmtclientprocessor.min.js',

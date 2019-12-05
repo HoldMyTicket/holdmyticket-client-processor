@@ -6,10 +6,6 @@ const hmt_client_processor_settings = {
   api_url_suffix : ''
 }
 
-/*
-  Utilities
-*/
-
 test('_update_payments_token should return array of object(s) with payment token property set if payment type is credit', () => {
   const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
@@ -82,8 +78,74 @@ test('_get_last_four gets last four digits of credit card number string', () => 
   expect(cc_last_four).toBe(expected_last_four);
 })
 
-test('_remember_card_data', () => {return false});
+test('_remember_card_data sets internal card data properties', () => {
+  const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
-test('_clear_state', () => {return false});
+  const remember_card_data_map = {
+    card: 'card_data',
+    token: 'card_token',
+    processor: 'card_processor',
+    ticket_key: 'card_ticket_key'
+  };
 
-test('_remove_sensitive_card_data', () => {return false});
+  Object.keys(remember_card_data_map).forEach((remember_card_data_key) => {
+    const args = { [remember_card_data_key]: '1234' };
+
+    cc_processor._remember_card_data(args);
+
+    const processor_remember_key = remember_card_data_map[remember_card_data_key];
+    const remembered_card_data = cc_processor[processor_remember_key];
+
+    const expected_remembered_card_data = args[remember_card_data_key];
+
+    expect(remembered_card_data).toBe(expected_remembered_card_data);
+  });
+});
+
+describe('_clear_state clears internal data', () => {
+  const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+  const error_arrays_that_should_be_empty = ['errors_internal', 'errors_processing'];
+  const props_that_should_be_deleted = ['card_data', 'card_token', 'card_processor', 'card_ticket_key'];
+
+  error_arrays_that_should_be_empty.forEach(error_array_key => {
+
+    test(`${error_array_key} array is empty`, () => {
+      cc_processor[error_array_key] = [{ error: 'this is an error' }];
+      cc_processor._clear_state();
+
+      const cc_processor_error_array = cc_processor[error_array_key];
+      expect(cc_processor_error_array).toHaveLength(0);
+    });
+
+  });
+
+  props_that_should_be_deleted.forEach(card_data_prop => {
+
+    test(`${card_data_prop} prop is deleted`, () => {
+      cc_processor[card_data_prop] = '1234';
+      cc_processor._clear_state();
+
+      expect(cc_processor).not.toHaveProperty(card_data_prop);
+    });
+
+  });
+});
+
+describe('_remove_sensitive_card_data removes sensitive card data properties', () => {
+  const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+  const sensitive_card_data_props = ['cc_no', 'cc_cvc', 'cc_expiry', 'cc_name', 'encryptedTrack1', 'encryptedTrack2', 'ksn'];
+
+  sensitive_card_data_props.forEach((sensitive_card_data_prop) => {
+
+    test(`${sensitive_card_data_prop} is deleted`, () => {
+      const card_data = { [sensitive_card_data_prop]: 'some test data' };
+
+      const cleaned_card_data = cc_processor._remove_sensitive_card_data(card_data);
+
+      expect(cleaned_card_data).not.toHaveProperty(sensitive_card_data_prop);
+    });
+
+  });
+});

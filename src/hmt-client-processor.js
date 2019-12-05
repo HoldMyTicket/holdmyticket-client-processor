@@ -585,7 +585,7 @@ var hmt_client_processor = function(settings){
 
     delete this.card_data
     delete this.card_token
-    delete this.processor
+    delete this.card_processor
     delete this.card_ticket_key
     
   }

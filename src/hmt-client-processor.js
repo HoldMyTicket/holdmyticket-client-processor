@@ -1,4 +1,6 @@
 
+import Qs from 'qs';
+
 var hmt_client_processor = function(settings){
 
   this.api_url = settings.api_url || '' // set when the script is loaded
@@ -319,7 +321,7 @@ var hmt_client_processor = function(settings){
         
       }
 
-      if(msg == '')
+      if(msg == '' && this.errors_processing.length == 0)
         msg = 'CPE4: Unknown processor error'
         
       this._add_processing_error(msg)
@@ -840,19 +842,23 @@ var hmt_client_processor = function(settings){
 
     try {
       
-      var data = {
-        transaction: transaction ? transaction : null,
-        response: response ? response : null,
-        errors_internal: this.errors_internal,
-        errors_processing: this.errors_processing,
-        is_hmt_front_error: true
+      var d = {
+        form_data: transaction ? transaction : null,
+        transaction: transaction ? transaction : null
       }
-
+      
+      d.form_data.errors_internal = this.errors_internal
+      d.form_data.errors_processing = this.errors_processing
+      
+      if(!d.transaction.processor)
+        d.transaction.processor = { merch_gateway: transaction.processor_method ? transaction.processor_method : null }
+      d.transaction.error_msg = this.errors_processing.join("\n")
+      
       var xhr = new XMLHttpRequest();
       xhr.open('POST', this.url('shop/carts/log_bad_trans', true), true);
       xhr.withCredentials = true
-      xhr.setRequestHeader('content-type', 'application/json;charset=UTF-8')
-      xhr.send(JSON.stringify(data))
+      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8')
+      xhr.send(this._serializer(d))
     
     } catch(error) {
 
@@ -890,19 +896,21 @@ var hmt_client_processor = function(settings){
   // deep serialize object to form data
   this._serializer = function(obj){
 
-    var pairs = [];
-    for (var prop in obj) {
-        if (!obj.hasOwnProperty(prop)) {
-            continue;
-        }
-        if (Object.prototype.toString.call(obj[prop]) == '[object Object]') {
-            pairs.push(this._serializer(obj[prop]));
-            continue;
-        }
-        pairs.push(prop + '=' + obj[prop]);
-    }
-    
-    return pairs.join('&');
+    return Qs.stringify(obj, { arrayFormat: 'repeat' });
+
+    // var pairs = [];
+    // for (var prop in obj) {
+    //     if (!obj.hasOwnProperty(prop)) {
+    //         continue;
+    //     }
+    //     if (Object.prototype.toString.call(obj[prop]) == '[object Object]') {
+    //         pairs.push(this._serializer(obj[prop]));
+    //         continue;
+    //     }
+    //     pairs.push(prop + '=' + obj[prop]);
+    // }
+    // 
+    // return pairs.join('&');
 
   }
 

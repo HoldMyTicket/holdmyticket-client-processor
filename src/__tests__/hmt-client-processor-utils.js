@@ -24,7 +24,7 @@ test('_update_payments_token should return array of object(s) with payment token
   expect(updated_payments).toEqual(expected_payments);
 });
 
-test('_format_card_for_save should return card object or false when missing data', () => {
+describe('_format_card_for_save formats card object', () => {
   const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
   const card = {
@@ -42,16 +42,20 @@ test('_format_card_for_save should return card object or false when missing data
   };
 
   Object.keys(card).forEach((card_key) => {
-    const incorrect_card = Object.assign({}, card);
-    delete incorrect_card[card_key];
+    test(`returned false because of missing ${card_key}`, () => {
+      const incorrect_card = Object.assign({}, card);
+      delete incorrect_card[card_key];
 
-    const formatted_card = cc_processor._format_card_for_save(incorrect_card);
+      const formatted_card = cc_processor._format_card_for_save(incorrect_card);
 
-    expect(formatted_card).toBe(false);
+      expect(formatted_card).toBe(false);
+    });
   });
 
-  const formatted_card = cc_processor._format_card_for_save(card);
-  expect(formatted_card).toEqual(correct_card);
+  test('card object is formatted correctly', () => {
+    const formatted_card = cc_processor._format_card_for_save(card);
+    expect(formatted_card).toEqual(correct_card);
+  });
 });
 
 test('_format_phone_number removes all special characters', () => {
@@ -78,7 +82,7 @@ test('_get_last_four gets last four digits of credit card number string', () => 
   expect(cc_last_four).toBe(expected_last_four);
 })
 
-test('_remember_card_data sets internal card data properties', () => {
+describe('_remember_card_data sets internal card data properties', () => {
   const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
   const remember_card_data_map = {
@@ -89,16 +93,18 @@ test('_remember_card_data sets internal card data properties', () => {
   };
 
   Object.keys(remember_card_data_map).forEach((remember_card_data_key) => {
-    const args = { [remember_card_data_key]: '1234' };
 
-    cc_processor._remember_card_data(args);
+    test(`${remember_card_data_map[remember_card_data_key]} is remembered`, () => {
+      const args = { [remember_card_data_key]: '1234' };
 
-    const processor_remember_key = remember_card_data_map[remember_card_data_key];
-    const remembered_card_data = cc_processor[processor_remember_key];
+      cc_processor._remember_card_data(args);
 
-    const expected_remembered_card_data = args[remember_card_data_key];
+      const processor_remember_key = remember_card_data_map[remember_card_data_key];
+      const expected_remembered_card_data = args[remember_card_data_key];
 
-    expect(remembered_card_data).toBe(expected_remembered_card_data);
+      expect(cc_processor).toHaveProperty(processor_remember_key, expected_remembered_card_data);
+    });
+
   });
 });
 

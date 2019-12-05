@@ -448,18 +448,18 @@ var hmt_client_processor = function(settings){
 
   this._webuser_save_card = async function(card, data, webuser_id, cb) {
 
-    var res = {}
-
-    // console.log('card: ', card)
-    // console.log('data: ', data)
-    // console.log('webuser_id: ', webuser_id)
+    var res = false
+    var err = false
 
     var spreedly_token_res = await this._get_spreedly_token(card, data.spreedly_environment_key)
 
-    // console.log('spreedly_token_res: ', spreedly_token_res)
+    if (!spreedly_token_res || !spreedly_token_res.transaction || !spreedly_token_res.transaction.payment_method || !spreedly_token_res.transaction.payment_method.token) {
+      if (!this.errors_processing && !this.errors_internal)
+        this._add_internal_error('Spreedly, Could not get token')
 
-    if (!spreedly_token_res || !spreedly_token_res.transaction || !spreedly_token_res.transaction.payment_method || !spreedly_token_res.transaction.payment_method.token)
-      return this._add_internal_error('Spreedly, Could not get token');
+      this._respond(this.errors_processing, spreedly_token_res, cb)
+      return 
+    }
 
     var request_data = {
       webuser_id: webuser_id,
@@ -475,13 +475,19 @@ var hmt_client_processor = function(settings){
       form_encoded: true
     })
 
-    // console.log('public/users/save_credit_card_res: ', save_credit_card_res)
-
     if (save_credit_card_res && save_credit_card_res.status == 'ok' && save_credit_card_res.statusText == 'OK')
-      res = save_credit_card_res
+      res = save_credit_card_res // this will be the successfull res!
 
-    if (!save_credit_card_res || !save_credit_card_res.status || save_credit_card_res.status != 'ok')
-      return this._add_internal_error('Error saving credit card');
+    if (!save_credit_card_res || !save_credit_card_res.status || save_credit_card_res.status != 'ok') {
+      if (save_credit_card_res && save_credit_card_res.response && save_credit_card_res.response.msg)
+        this._add_processing_error(save_credit_card_res.response.msg)
+
+      if (!this.errors_processing && !this.errors_internal)
+        this._add_internal_error('Spreedly, Error saving credit card')
+
+      this._respond(this.errors_processing, spreedly_token_res, cb)
+      return 
+    }
 
     var authentication_key_res = await this._get_fullsteam_auth_key()
 
@@ -496,8 +502,11 @@ var hmt_client_processor = function(settings){
       env_key = authentication_key_res.authenticationKey;
 
     if (!env_key) {
-      // console.error('no env key! ', authentication_key_res)
-      return this._add_internal_error('Fullsteam, Could not get env_key');
+      if (!this.errors_processing && !this.errors_internal)
+        this._add_internal_error('Fullsteam, Could not get env_key');
+
+      this._respond(this.errors_processing, authentication_key_res, cb)
+      return
     }
 
     if (!data.zip && card.payment_method.credit_card.zip)
@@ -505,8 +514,14 @@ var hmt_client_processor = function(settings){
 
     var fullsteam_token_res = await this._get_fullsteam_token(card, data, env_key)
 
-    if (!fullsteam_token_res || !fullsteam_token_res.isSuccessful || !fullsteam_token_res.token)
-      return this._add_internal_error('Fullsteam, Could not get token');
+    if (!fullsteam_token_res || !fullsteam_token_res.isSuccessful || !fullsteam_token_res.token) {
+       // _get_fullsteam_token throws internal error for: !fullsteam_token_res || !fullsteam_token_res.isSuccessful
+      if (fullsteam_token_res && !fullsteam_token_res.token) // throw internal error when there is a fullsteam_token_res, but no token
+        this._add_internal_error('Fullsteam, Responded with no token')
+
+      this._respond(this.errors_processing, authentication_key_res, cb)
+      return      
+    }
 
     var card_data = card.payment_method.credit_card
       ? this._format_card_for_save(card.payment_method.credit_card)
@@ -527,14 +542,15 @@ var hmt_client_processor = function(settings){
       form_encoded: true
     });
 
-    // console.log('public/users/save_additional_card res: ', save_additional_card_res)
+    if (!save_additional_card_res || !save_additional_card_res.status || save_additional_card_res.status != 'ok') {
+      if (!this.errors_processing && !this.errors_internal)
+        this._add_internal_error('Fullsteam, Error saving credit card')
 
-    if (!save_additional_card_res || !save_additional_card_res.status || save_additional_card_res.status != 'ok')
-      return this._add_internal_error('Error saving additional credit card');
+      this._respond(this.errors_processing, save_credit_card_res, cb)
+      return 
+    }
 
-    // console.log('res: ', res)
-
-    this._respond(null, res, cb); // TODO: actually send errors if there are any? 
+    this._respond(err, res, cb);
 
   }
   

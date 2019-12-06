@@ -858,11 +858,16 @@ var hmt_client_processor = function(settings){
 
     try {
       
-      var d = {
-        form_data: transaction ? transaction : null,
-        transaction: transaction ? transaction : null
+      // cloning object, so no ref
+      var t = transaction ? this._copy_object(transaction) : null
+
+      // delete survey data
+      for(key in t){
+        if(key.indexOf('survey') > -1) delete t[key]
       }
       
+      var d = { form_data: t, transaction: t }
+
       d.form_data.errors_internal = this.errors_internal
       d.form_data.errors_processing = this.errors_processing
       
@@ -951,6 +956,18 @@ var hmt_client_processor = function(settings){
   this._add_processing_error = function(err){
     this.errors_processing.push(err)
     return false
+  }
+  
+  this._copy_object = function(obj){
+
+    try {
+      if(typeof obj != 'object')
+        return false
+      return JSON.parse(JSON.stringify(obj))
+    } catch(error) {
+      return false
+    }
+    
   }
 
 }

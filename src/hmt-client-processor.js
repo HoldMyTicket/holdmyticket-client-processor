@@ -147,7 +147,7 @@ var hmt_client_processor = function(settings){
     })
     
     if(token.errors && token.errors.length > 0){
-      for(key in token.errors)
+      for(var key in token.errors)
         this._add_processing_error(token.errors[key].message)
     }
 
@@ -704,7 +704,7 @@ var hmt_client_processor = function(settings){
       xhr.open(opts.type || 'GET', url);
       xhr.withCredentials = opts.withCredentials || false;
       
-      for(key in headers)
+      for(var key in headers)
         xhr.setRequestHeader(key, headers[key])
         
       xhr.onreadystatechange = (evt) => {
@@ -861,7 +861,7 @@ var hmt_client_processor = function(settings){
       var t = transaction ? this._copy_object(transaction) : null
 
       // delete survey data
-      for(key in t){
+      for(var key in t){
         if(key.indexOf('survey') > -1) delete t[key]
       }
       

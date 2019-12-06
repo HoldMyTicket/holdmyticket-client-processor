@@ -448,8 +448,7 @@ var hmt_client_processor = function(settings){
 
   this._webuser_save_card = async function(card, data, webuser_id, cb) {
 
-    var res = false
-    var err = false
+    var res = {}
 
     var spreedly_token_res = await this._get_spreedly_token(card, data.spreedly_environment_key)
 
@@ -458,7 +457,7 @@ var hmt_client_processor = function(settings){
         this._add_internal_error('Spreedly, Could not get token')
 
       this._respond(this.errors_processing, spreedly_token_res, cb)
-      return 
+      return
     }
 
     var request_data = {
@@ -520,7 +519,7 @@ var hmt_client_processor = function(settings){
         this._add_internal_error('Fullsteam, Responded with no token')
 
       this._respond(this.errors_processing, authentication_key_res, cb)
-      return      
+      return
     }
 
     var card_data = card.payment_method.credit_card
@@ -547,10 +546,10 @@ var hmt_client_processor = function(settings){
         this._add_internal_error('Fullsteam, Error saving credit card')
 
       this._respond(this.errors_processing, save_credit_card_res, cb)
-      return 
+      return
     }
 
-    this._respond(err, res, cb);
+    this._respond(false, res, cb);
 
   }
   
@@ -666,7 +665,7 @@ var hmt_client_processor = function(settings){
           delete opts.data.payments;
 
           var stringifiedPostData = this._serializer(opts.data);
-          var stringifiedPayments = this._serializer({ payments: payments });
+          var stringifiedPayments = this._serializer({ payments: payments }, true);
           stringifiedPostData = stringifiedPostData + '&' + stringifiedPayments;
           
         } else {
@@ -910,9 +909,12 @@ var hmt_client_processor = function(settings){
   }
 
   // deep serialize object to form data
-  this._serializer = function(obj){
+  this._serializer = function(obj, serialize_without_repeat){
 
-    return Qs.stringify(obj, { arrayFormat: 'repeat' });
+    var qs_opts = serialize_without_repeat ? {} : { arrayFormat: 'repeat'}
+
+    return Qs.stringify(obj, qs_opts);
+
 
     // var pairs = [];
     // for (var prop in obj) {

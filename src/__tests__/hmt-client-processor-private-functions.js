@@ -88,22 +88,22 @@ describe('_submit_spreedly', () => {
     jest.spyOn(cc_processor, '_get_spreedly_token');
     jest.spyOn(cc_processor, '_submit_spreedly_transaction');
     jest.spyOn(cc_processor, '_save_card_to_webuser');
-    jest.spyOn(cc_processor, 'save_card');
+    jest.spyOn(cc_processor, '_save_card');
     cc_processor._get_spreedly_token.mockImplementationOnce((card, spreedly_environment_key, cb) => Promise.resolve(spreedly_token_response_success));
     cc_processor._submit_spreedly_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
     cc_processor._save_card_to_webuser.mockImplementationOnce((args) => Promise.resolve(undefined));
-    cc_processor.save_card.mockImplementationOnce((args) => Promise.resolve(undefined));
+    cc_processor._save_card.mockImplementationOnce((args) => Promise.resolve(undefined));
 
     fresh_spreedly_transaction_data.cc_retain = 'y';
     
     const cc_processor_response = await cc_processor._submit_spreedly(fresh_spreedly_card_data, fresh_spreedly_transaction_data);
 
-    expect(cc_processor.save_card).toHaveBeenCalledTimes(1);
-    expect(cc_processor.save_card).toHaveBeenCalledWith(fresh_spreedly_card_data, fresh_spreedly_transaction_data, 'fullsteam');
+    expect(cc_processor._save_card).toHaveBeenCalledTimes(1);
+    expect(cc_processor._save_card).toHaveBeenCalledWith(fresh_spreedly_card_data, fresh_spreedly_transaction_data, 'fullsteam');
 
     cc_processor._get_spreedly_token.mockRestore();
     cc_processor._submit_spreedly_transaction.mockRestore();
     cc_processor._save_card_to_webuser.mockRestore();
-    cc_processor.save_card.mockRestore();
+    cc_processor._save_card.mockRestore();
   })
 });

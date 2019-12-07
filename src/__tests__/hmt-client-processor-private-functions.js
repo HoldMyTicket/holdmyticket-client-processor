@@ -106,4 +106,85 @@ describe('_submit_spreedly', () => {
     cc_processor._save_card_to_webuser.mockRestore();
     cc_processor._save_card.mockRestore();
   })
+
+  test('returns false if token response is a falsy value', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_get_spreedly_token');
+    jest.spyOn(cc_processor, '_add_internal_error');
+    cc_processor._get_spreedly_token.mockImplementationOnce((card, spreedly_environment_key, cb) => Promise.resolve(false));
+    cc_processor._add_internal_error.mockImplementationOnce((err) => false);
+    
+    const cc_processor_response = await cc_processor._submit_spreedly(fresh_spreedly_card_data, fresh_spreedly_transaction_data);
+    
+    expect(cc_processor._add_internal_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_internal_error).toHaveBeenCalledWith(expect.any(String));
+
+    expect(cc_processor_response).toBe(false);
+
+    cc_processor._get_spreedly_token.mockRestore();
+    cc_processor._add_internal_error.mockRestore();
+  });
+
+  test('returns false if token response does not have transaction property', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_get_spreedly_token');
+    jest.spyOn(cc_processor, '_add_internal_error');
+    cc_processor._get_spreedly_token.mockImplementationOnce((card, spreedly_environment_key, cb) => {
+      Promise.resolve({});
+    });
+    cc_processor._add_internal_error.mockImplementationOnce((err) => false);
+    
+    const cc_processor_response = await cc_processor._submit_spreedly(fresh_spreedly_card_data, fresh_spreedly_transaction_data);
+    
+    expect(cc_processor._add_internal_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_internal_error).toHaveBeenCalledWith(expect.any(String));
+
+    expect(cc_processor_response).toBe(false);
+
+    cc_processor._get_spreedly_token.mockRestore();
+    cc_processor._add_internal_error.mockRestore();
+  });
+
+  test('return false if token response does not have payment_method property', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_get_spreedly_token');
+    jest.spyOn(cc_processor, '_add_internal_error');
+    cc_processor._get_spreedly_token.mockImplementationOnce((card, spreedly_environment_key, cb) => {
+      Promise.resolve({ transaction: {} });
+    });
+    cc_processor._add_internal_error.mockImplementationOnce((err) => false);
+    
+    const cc_processor_response = await cc_processor._submit_spreedly(fresh_spreedly_card_data, fresh_spreedly_transaction_data);
+    
+    expect(cc_processor._add_internal_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_internal_error).toHaveBeenCalledWith(expect.any(String));
+
+    expect(cc_processor_response).toBe(false);
+
+    cc_processor._get_spreedly_token.mockRestore();
+    cc_processor._add_internal_error.mockRestore();
+  });
+
+  test('return false if token response does not have token property', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_get_spreedly_token');
+    jest.spyOn(cc_processor, '_add_internal_error');
+    cc_processor._get_spreedly_token.mockImplementationOnce((card, spreedly_environment_key, cb) => {
+      Promise.resolve({ transaction: { payment_method: {} } });
+    });
+    cc_processor._add_internal_error.mockImplementationOnce((err) => false);
+    
+    const cc_processor_response = await cc_processor._submit_spreedly(fresh_spreedly_card_data, fresh_spreedly_transaction_data);
+    
+    expect(cc_processor._add_internal_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_internal_error).toHaveBeenCalledWith(expect.any(String));
+
+    expect(cc_processor_response).toBe(false);
+    cc_processor._get_spreedly_token.mockRestore();
+    cc_processor._add_internal_error.mockRestore();
+  });
 });

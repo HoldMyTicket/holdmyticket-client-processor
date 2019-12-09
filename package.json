@@ -6,7 +6,7 @@
   "author": "wes@holdmyticket.com",
   "license": "MIT",
   "scripts": {
-    "test": "jest",
+    "test": "jest --verbose",
     "test:watch": "jest --watchAll"
   },
   "devDependencies": {

@@ -252,12 +252,34 @@ describe('_get_spreedly_token', () => {
   })
 });
 
-// describe('_submit_spreedly_transaction', () => {
-//   beforeEach(() => {
-//     // resetting the data variables before each test to ensure we are using fresh test data
-//     // that hasn't been already mutated from a previous test
-//     fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
-//     fresh_spreedly_card_data = Object.assign({}, spreedly_card_data);
-//     fresh_spreedly_token_response_error = Object.assign({}, spreedly_token_response_error);
-//   });
-// });
+describe('_submit_spreedly_transaction', () => {
+  beforeEach(() => {
+    // resetting the data variables before each test to ensure we are using fresh test data
+    // that hasn't been already mutated from a previous test
+    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+    fresh_spreedly_card_data = Object.assign({}, spreedly_card_data);
+    fresh_spreedly_token_response_error = Object.assign({}, spreedly_token_response_error);
+  });
+
+  test('submits the spreedly transaction', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve(successful_transaction_response));
+
+    const spreedly_submit_transaction_response = await cc_processor._submit_spreedly_transaction(fresh_spreedly_transaction_data);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/shop/carts/submit',
+      type: 'POST',
+      data: fresh_spreedly_transaction_data,
+      form_encoded: true,
+      withCredentials: true
+    })
+
+    expect(spreedly_submit_transaction_response).toBe(successful_transaction_response);
+
+    cc_processor._request.mockRestore();
+  })
+});

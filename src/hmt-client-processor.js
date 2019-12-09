@@ -261,7 +261,7 @@ var hmt_client_processor = function(settings){
           "zip": transaction.zip || (this.app_type  == 'box' ? '00000' : null),
           "country": this._get_fullsteam_contry_code(transaction),
           "phone": transaction.phone || null,
-          "email": transaction.email || null,
+          "email": transaction.email1 || null,
         }
       },
       "cardEntryContext": this.app_type == 'box' ? 7 : 5,

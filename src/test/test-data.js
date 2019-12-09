@@ -6,11 +6,7 @@ export const successful_transaction_response = {
   "status":"ok"
 };
 
-/*
-SPREEDLY
-=================================================
-*/
-export const spreedly_card_data = {
+export const card_data = {
   payment_method: {
     credit_card: {
       address1: 'test address 123',
@@ -24,6 +20,11 @@ export const spreedly_card_data = {
     }
   }
 };
+
+/*
+SPREEDLY
+=================================================
+*/
 
 export const spreedly_transaction_data = {
   address1: 'test address 123',
@@ -111,4 +112,65 @@ export const spreedly_token_response_error = {
       "message":"Month is invalid"
     }
   ]
+}
+
+
+/*
+FULLSTEAM
+=================================================
+*/
+export const fullsteam_transaction_data = {
+  address1: 'test address 123',
+  address2: '',
+  cb_data: { ticket_index: '0' },
+  city: 'Albuquerque',
+  country_id: '2',
+  email1: 'joseph.perez@holdmyticket.com',
+  email2: 'joseph.perez@holdmyticket.com',
+  f_name: 'Joseph',
+  l_name: 'Perez',
+  newsletter: 'on',
+  phone: '5555555555',
+  processor_hash: '7952dd2fb5cbc9ace7b8321b332a07a5',
+  processor_method: 'fullsteam',
+  sms: 'y',
+  state: 'NM',
+  state_international: '',
+  subscription_plan: '',
+  zip: '87121'
+}
+
+export const fullsteam_authentication_key_response_success = {
+  "authenticationKey":"d1236fd7-39a3-4022-9325-e2f93eff74e8",
+  "status":"ok",
+  "transid":"026-9903126867"
+}
+
+export const fullsteam_payment_token = '06aea257-28fa-487e-b0b3-59503d282c16';
+
+export const fullsteam_token_response_success = {
+  "token": "06aea257-28fa-487e-b0b3-59503d282c16",
+  "issuerResponseDetails": {
+    "issuerResponseCode": "00",
+    "issuerResponseDescription": "Transaction Approved",
+    "avsResponseCode": "Y",
+    "avsResponseDescription": "Yes: Address and five-digit zip code match.",
+    "cvvResponseCode": "M",
+    "cvvResponseDescription": "Match",
+    "processingNetwork": 1
+  },
+  "accountDetails": {
+    "paymentMethod": 1,
+    "cardBIN": "411111",
+    "paymentAccountLast4": "1111",
+    "nameOnAccount": "test test",
+    "expirationMonth": 12,
+    "expirationYear": 2021,
+    "cardEntryMethod": 4
+  },
+  "actionGuid": "00594033-9ec5-494b-8201-ae53e4785324",
+  "isSuccessful": true,
+  "responseCode": 0,
+  "responseDetails": [],
+  "durationInMilliseconds": 932
 }

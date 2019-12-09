@@ -4,7 +4,8 @@ import {
   spreedly_card_data,
   spreedly_transaction_data,
   spreedly_payment_token,
-  spreedly_token_response_success
+  spreedly_token_response_success,
+  spreedly_token_response_error
 } from '../test/test-data';
 
 const hmt_client_processor_settings = {
@@ -15,6 +16,8 @@ const hmt_client_processor_settings = {
 
 let fresh_spreedly_transaction_data;
 let fresh_spreedly_card_data;
+
+let fresh_spreedly_token_response_error;
 
 describe('_submit_spreedly', () => {
   beforeEach(() => {
@@ -184,7 +187,77 @@ describe('_submit_spreedly', () => {
     expect(cc_processor._add_internal_error).toHaveBeenCalledWith(expect.any(String));
 
     expect(cc_processor_response).toBe(false);
+
     cc_processor._get_spreedly_token.mockRestore();
     cc_processor._add_internal_error.mockRestore();
   });
 });
+
+describe('_get_spreedly_token', () => {
+  beforeEach(() => {
+    // resetting the data variables before each test to ensure we are using fresh test data
+    // that hasn't been already mutated from a previous test
+    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+    fresh_spreedly_card_data = Object.assign({}, spreedly_card_data);
+    fresh_spreedly_token_response_error = Object.assign({}, spreedly_token_response_error);
+  });
+
+  test('returns spreedly token', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve(spreedly_token_response_success));
+
+    const spreedly_token_response = await cc_processor._get_spreedly_token(fresh_spreedly_card_data, fresh_spreedly_transaction_data.spreedly_environment_key);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: `https://core.spreedly.com/v1/payment_methods.json?environment_key=${fresh_spreedly_transaction_data.spreedly_environment_key}`,
+      type: 'POST',
+      withCredentials: false,
+      json: true,
+      data: fresh_spreedly_card_data
+    })
+
+    expect(spreedly_token_response).toBe(spreedly_token_response_success);
+
+    cc_processor._request.mockRestore();
+  })
+
+  test('processing errors are added if token response returned with errors', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_add_processing_error');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve(fresh_spreedly_token_response_error));
+    cc_processor._add_processing_error.mockImplementationOnce((err) => false);
+
+    const spreedly_token_response = await cc_processor._get_spreedly_token(fresh_spreedly_card_data, fresh_spreedly_transaction_data.spreedly_environment_key);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: `https://core.spreedly.com/v1/payment_methods.json?environment_key=${fresh_spreedly_transaction_data.spreedly_environment_key}`,
+      type: 'POST',
+      withCredentials: false,
+      json: true,
+      data: fresh_spreedly_card_data
+    })
+
+    expect(cc_processor._add_processing_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_processing_error).toHaveBeenCalledWith(fresh_spreedly_token_response_error.errors[0].message);
+
+    expect(spreedly_token_response).toBe(fresh_spreedly_token_response_error);
+
+    cc_processor._request.mockRestore();
+  })
+});
+
+// describe('_submit_spreedly_transaction', () => {
+//   beforeEach(() => {
+//     // resetting the data variables before each test to ensure we are using fresh test data
+//     // that hasn't been already mutated from a previous test
+//     fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+//     fresh_spreedly_card_data = Object.assign({}, spreedly_card_data);
+//     fresh_spreedly_token_response_error = Object.assign({}, spreedly_token_response_error);
+//   });
+// });

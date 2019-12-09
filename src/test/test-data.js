@@ -102,3 +102,13 @@ export const spreedly_token_response_success = {
     }
   }
 }
+
+export const spreedly_token_response_error = {
+  "errors":[
+    {
+      "attribute":"month",
+      "key":"errors.invalid",
+      "message":"Month is invalid"
+    }
+  ]
+}

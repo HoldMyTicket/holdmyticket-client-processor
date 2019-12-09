@@ -5,8 +5,17 @@
   "repository": "https://github.com/HoldMyTicket/holdmyticket-client-processor.git",
   "author": "wes@holdmyticket.com",
   "license": "MIT",
+  "jest": {
+    "verbose": true,
+    "collectCoverageFrom": [
+      "src/hmt-client-processor.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
+  },
   "scripts": {
-    "test": "jest --verbose",
+    "test": "jest --coverage",
     "test:watch": "jest --watchAll"
   },
   "devDependencies": {

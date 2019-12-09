@@ -269,7 +269,7 @@ describe('_submit_spreedly_transaction', () => {
     fresh_spreedly_token_response_error = Object.assign({}, spreedly_token_response_error);
   });
 
-  test('submits the spreedly transaction', async () => {
+  test('submits the transaction', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
     jest.spyOn(cc_processor, '_request');
@@ -427,5 +427,51 @@ describe('_get_fullsteam_token', () => {
     expect(fullsteam_token_response).toBe(fresh_fullsteam_token_response_success);
 
     cc_processor._request.mockRestore();
+  });
+});
+
+describe('_submit_fullsteam_transaction', () => {
+  beforeEach(() => {
+    // resetting the data variables before each test to ensure we are using fresh test data
+    // that hasn't been already mutated from a previous test
+    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
+  });
+
+  test('submits the transaction', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve(successful_transaction_response));
+
+    const fullsteam_submit_transaction_response = await cc_processor._submit_fullsteam_transaction(fresh_fullsteam_transaction_data);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/shop/carts/submit',
+      type: 'POST',
+      data: fresh_fullsteam_transaction_data,
+      form_encoded: true,
+      withCredentials: true
+    });
+
+    expect(fullsteam_submit_transaction_response).toBe(successful_transaction_response);
+
+    cc_processor._request.mockRestore();
+  });
+});
+
+describe('_get_fullsteam_contry_code', () => {
+  beforeEach(() => {
+    // resetting the data variables before each test to ensure we are using fresh test data
+    // that hasn't been already mutated from a previous test
+    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
+  });
+
+  test('returns country code', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const fullsteam_country_code_response = cc_processor._get_fullsteam_contry_code(fresh_fullsteam_transaction_data);
+
+    expect(fullsteam_country_code_response).toBe('US');
   });
 });

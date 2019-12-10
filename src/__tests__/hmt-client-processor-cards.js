@@ -34,6 +34,10 @@ describe('_save_card', () => {
     fresh_successful_transaction_response = Object.assign({}, successful_transaction_response);
 
     fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+
+    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
+    fresh_fullsteam_authentication_key_response_success = Object.assign({}, fullsteam_authentication_key_response_success);
+    fresh_fullsteam_token_response_success = Object.assign({}, fullsteam_token_response_success);
   });
 
   test('calls _save_card_to_webuser for spreedly with correct data', async () => {
@@ -61,9 +65,35 @@ describe('_save_card', () => {
     cc_processor._save_card_to_webuser.mockRestore();
   });
 
-  // test('saves card to webuser for fullsteam', async () => {
+  test('calls _save_card_to_webuser for fullsteam with correct data', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
-  // });
+    jest.spyOn(cc_processor, '_get_fullsteam_auth_key');
+    jest.spyOn(cc_processor, '_get_fullsteam_token');
+    jest.spyOn(cc_processor, '_save_card_to_webuser');
+    cc_processor._get_fullsteam_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
+    cc_processor._get_fullsteam_token.mockImplementationOnce((card, transaction, auth_key) => Promise.resolve(fresh_fullsteam_token_response_success));
+    cc_processor._save_card_to_webuser.mockImplementationOnce(args => undefined);
+
+    await cc_processor._save_card(fresh_card_data, fresh_fullsteam_transaction_data, 'fullsteam', fresh_successful_transaction_response.ticket_key);
+
+    expect(cc_processor._get_fullsteam_auth_key).toHaveBeenCalledTimes(1);
+
+    expect(cc_processor._get_fullsteam_token).toHaveBeenCalledTimes(1);
+    expect(cc_processor._get_fullsteam_token).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
+
+    expect(cc_processor._save_card_to_webuser).toHaveBeenCalledTimes(1);
+    expect(cc_processor._save_card_to_webuser).toHaveBeenCalledWith({
+      card: fresh_card_data.payment_method.credit_card,
+      processor: 'fullsteam',
+      ticket_key: fresh_successful_transaction_response.ticket_key,
+      token: fresh_fullsteam_token_response_success.token
+    });
+
+    cc_processor._get_fullsteam_auth_key.mockRestore();
+    cc_processor._get_fullsteam_token.mockRestore();
+    cc_processor._save_card_to_webuser.mockRestore();
+  });
 });
 
 // describe('_save_card_to_webuser', () => {

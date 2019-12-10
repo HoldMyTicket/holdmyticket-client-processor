@@ -404,16 +404,14 @@ var hmt_client_processor = function(settings){
       if(!env_key)
         return
 
-      this._get_fullsteam_token(card, transaction, env_key, function(err, token_res){
-        
-        if(!token_res || !token_res.isSuccessful || !token_res.token)
-          return
+      const token_res = await this._get_fullsteam_token(card, transaction, env_key);
 
-        args.token = token_res.token;
+      if(!token_res || !token_res.isSuccessful || !token_res.token)
+        return
+
+      args.token = token_res.token;
       
-        this._save_card_to_webuser(args);
-      
-      })
+      this._save_card_to_webuser(args);
 
     }
     

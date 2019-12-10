@@ -161,3 +161,33 @@ describe('_remove_sensitive_card_data', () => {
 
   });
 });
+
+describe('_add_internal_error', () => {
+  test('pushes error message to the errors_internal array', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const error_message = 'this is a test internal error message';
+
+    const add_internal_error_response = cc_processor._add_internal_error(error_message);
+
+    expect(cc_processor.errors_internal).toHaveLength(1);
+    expect(cc_processor.errors_internal[0]).toBe(error_message)
+
+    expect(add_internal_error_response).toBe(false);
+  });
+});
+
+describe('_add_processing_error', () => {
+  test('pushes error message to the errors_processing array', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const error_message = 'this is a test processing error message';
+
+    const add_processing_error_response = cc_processor._add_processing_error(error_message);
+
+    expect(cc_processor.errors_processing).toHaveLength(1);
+    expect(cc_processor.errors_processing[0]).toBe(error_message)
+
+    expect(add_processing_error_response).toBe(false);
+  });
+});

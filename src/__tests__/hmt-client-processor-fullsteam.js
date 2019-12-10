@@ -203,3 +203,20 @@ describe('_get_fullsteam_contry_code', () => {
     expect(fullsteam_country_code_response).toBe('US');
   });
 });
+
+describe('fullsteam_url', () => {
+  const environments = ['local', 'dev', 'staging', 'production'];
+
+  environments.forEach(environment => {
+    test(`returns the correct url for ${environment} environment`, () => {
+      const updated_hmt_client_processor_settings = Object.assign({}, hmt_client_processor_settings, { env: environment });
+      
+      const cc_processor = new hmt_client_processor(updated_hmt_client_processor_settings);
+
+      const fullsteam_url_response = cc_processor.fullsteam_url();
+
+      if (environment === 'production') expect(fullsteam_url_response).toBe('https://api.fullsteampay.net/');
+      else expect(fullsteam_url_response).toBe('https://api-ext.fullsteampay.net/');
+    });
+  });
+});

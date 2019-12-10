@@ -283,3 +283,14 @@ describe('_submit_spreedly_transaction', () => {
     cc_processor._request.mockRestore();
   });
 });
+
+describe('spreedly_url', () => {
+  test('returns the spreedly url with the spreedly environment key set to the one that was passed in as an argument', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const spreedly_environment_key = '12345';
+    const spreedly_url_response = cc_processor.spreedly_url(spreedly_environment_key);
+
+    expect(spreedly_url_response).toBe(`https://core.spreedly.com/v1/payment_methods.json?environment_key=${spreedly_environment_key}`)
+  });
+});

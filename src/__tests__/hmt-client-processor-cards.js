@@ -96,9 +96,70 @@ describe('_save_card', () => {
   });
 });
 
-// describe('_save_card_to_webuser', () => {
+describe('_save_card_to_webuser', () => {
+  beforeEach(() => {
+    fresh_card_data = Object.assign({}, card_data);
+    fresh_successful_transaction_response = Object.assign({}, successful_transaction_response);
 
-// });
+    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+
+    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
+    fresh_fullsteam_authentication_key_response_success = Object.assign({}, fullsteam_authentication_key_response_success);
+    fresh_fullsteam_token_response_success = Object.assign({}, fullsteam_token_response_success);
+  });
+
+  test('calls request method with correct data', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_remember_card_data');
+    jest.spyOn(cc_processor, '_format_card_for_save');
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, 'url');
+    cc_processor._request.mockImplementationOnce(() => Promise.resolve('fake response'));
+
+    const args = {
+      card: fresh_card_data.payment_method.credit_card,
+      processor: 'fullsteam',
+      ticket_key: fresh_successful_transaction_response.ticket_key,
+      token: fresh_fullsteam_token_response_success.token
+    };
+
+    await cc_processor._save_card_to_webuser(args);
+
+    expect(cc_processor._remember_card_data).toHaveBeenCalledTimes(1);
+    expect(cc_processor._remember_card_data).toHaveBeenCalledWith(args);
+
+    expect(cc_processor._format_card_for_save).toHaveBeenCalledTimes(1);
+    expect(cc_processor._format_card_for_save).toHaveBeenCalledWith(cc_processor.card_data);
+
+    expect(cc_processor.url).toHaveBeenCalledTimes(1);
+    expect(cc_processor.url).toHaveBeenCalledWith('public/orders/save_additional_card', false);
+    
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/public/orders/save_additional_card',
+      type: 'POST',
+      withCredentials : false,
+      data: {
+        ticket_key: args.ticket_key,
+        vault: args.processor,
+        token: args.token,
+        card_data: {
+          full_name : args.card.full_name,
+          last_four : '1111',
+          exp_month : args.card.month,
+          exp_year : args.card.year,
+        }
+      },
+      form_encoded: true
+    });
+
+    cc_processor._remember_card_data.mockRestore();
+    cc_processor._format_card_for_save.mockRestore();
+    cc_processor._request.mockRestore();
+    cc_processor.url.mockRestore();
+  });
+});
 
 // describe('_webuser_save_card', () => {
 

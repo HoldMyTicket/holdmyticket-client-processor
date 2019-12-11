@@ -28,6 +28,49 @@ let fresh_fullsteam_transaction_data;
 let fresh_fullsteam_authentication_key_response_success;
 let fresh_fullsteam_token_response_success;
 
+describe('save_card', () => {
+  beforeEach(() => {
+    fresh_card_data = Object.assign({}, card_data);
+    fresh_successful_transaction_response = Object.assign({}, successful_transaction_response);
+
+    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+  });
+
+  test('calls the internal _save_card method with correct data', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_save_card');
+    cc_processor._save_card.mockImplementationOnce(() => undefined);
+
+    cc_processor.save_card(fresh_card_data, fresh_spreedly_transaction_data, 'spreedly', fresh_successful_transaction_response.ticket_key);
+
+    expect(cc_processor._save_card).toHaveBeenCalledTimes(1);
+    expect(cc_processor._save_card).toHaveBeenCalledWith(fresh_card_data, fresh_spreedly_transaction_data, 'spreedly', fresh_successful_transaction_response.ticket_key);
+
+    cc_processor._save_card.mockRestore();
+  });
+});
+
+describe('webuser_save_card', () => {
+  beforeEach(() => {
+    fresh_card_data = Object.assign({}, card_data);
+  });
+
+  test('calls the internal _webuser_save_card method with correct data', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_webuser_save_card');
+    cc_processor._webuser_save_card.mockImplementationOnce(() => undefined);
+
+    cc_processor.webuser_save_card(fresh_card_data, { test: 'this is a test value' }, 1);
+
+    expect(cc_processor._webuser_save_card).toHaveBeenCalledTimes(1);
+    expect(cc_processor._webuser_save_card).toHaveBeenCalledWith(fresh_card_data, { test: 'this is a test value' }, 1, undefined);
+
+    cc_processor._webuser_save_card.mockRestore();
+  });
+});
+
 describe('_save_card', () => {
   beforeEach(() => {
     fresh_card_data = Object.assign({}, card_data);

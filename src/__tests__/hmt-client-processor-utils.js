@@ -191,3 +191,35 @@ describe('_add_processing_error', () => {
     expect(add_processing_error_response).toBe(false);
   });
 });
+
+describe('_copy_object', () => {
+  test('returns copy of object', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const test_object = { name: 'Joseph Perez', middleInitial: 'A' };
+
+    const copy_object_response = cc_processor._copy_object(test_object);
+    
+    expect(copy_object_response).toEqual(test_object);
+    expect(copy_object_response).not.toBe(test_object);
+  });
+
+  test('returns false if data passed in is not typeof object', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const copy_object_response = cc_processor._copy_object('test');
+    
+    expect(copy_object_response).toBe(false);
+  });
+
+  test('returns false if error is thrown', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const test_object = { name: 'Joseph Perez', middleInitial: 'A', num: BigInt(2) };
+    const copy_object_response = cc_processor._copy_object(test_object);
+    
+    expect(copy_object_response).toBe(false);
+  });
+});
+
+// describe('_prepare_transaction', () => {});

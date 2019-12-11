@@ -162,6 +162,71 @@ describe('_remove_sensitive_card_data', () => {
   });
 });
 
+describe('_get_browser_info', () => {
+  let navigatorMock;
+  let navigatorTestObject = {
+    platform: 'test platform',
+    userAgent: 'test user agent',
+    vendor: 'test vendor',
+    vendorSub: 'test vendor sub'
+  };
+
+  beforeEach(() => {
+    navigatorMock = jest.spyOn(global, 'navigator', 'get');
+  });
+
+  afterEach(() => {
+    navigatorMock.mockRestore();
+  });
+
+  test('returns object with browser info', () => {
+    navigatorMock.mockImplementation(() => navigatorTestObject);
+
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const get_browser_info_response = cc_processor._get_browser_info();
+
+    expect(get_browser_info_response).toEqual(navigatorTestObject);
+  });
+
+  Object.keys(navigatorTestObject).forEach(key => {
+
+    test(`if navigator ${key} key does not exist an empty string is set as the value`, () => {
+      const navigator_object_missing_data = Object.assign({}, navigatorTestObject);
+      delete navigator_object_missing_data[key];
+
+      navigatorMock.mockImplementation(() => navigator_object_missing_data);
+      
+      const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+      const get_browser_info_response = cc_processor._get_browser_info();
+
+      expect(get_browser_info_response).toHaveProperty(key, '');
+    });
+
+  });
+});
+
+// describe('_serializer', () => {
+
+// });
+
+describe('_prepare_transaction', () => {
+  test('formats the phone number in the transaction object', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_format_phone_number');
+
+    const test_transaction = { f_name: 'Joseph', l_name: 'Perez', phone: '(505)-555-5555' };
+    const prepare_transaction_response = cc_processor._prepare_transaction(test_transaction);
+
+    expect(cc_processor._format_phone_number).toHaveBeenCalledTimes(1);
+    expect(cc_processor._format_phone_number).toHaveBeenCalledWith('(505)-555-5555');
+
+    expect(prepare_transaction_response).toEqual({ f_name: 'Joseph', l_name: 'Perez', phone: '5055555555' });
+  })
+});
+
 describe('_add_internal_error', () => {
   test('pushes error message to the errors_internal array', () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
@@ -221,5 +286,3 @@ describe('_copy_object', () => {
     expect(copy_object_response).toBe(false);
   });
 });
-
-// describe('_prepare_transaction', () => {});

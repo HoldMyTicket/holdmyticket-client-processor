@@ -307,8 +307,11 @@ var hmt_client_processor = function(settings){
           msg = "CVV Error: "+CVVResponseDescription; //takes precedence
           
         } else {
-          
-          if(msg == '' && issuerResponseDescription)
+
+          if(this.errors_processing.length > 0 && issuerResponseCode == '00') // we already have processing error, and there isn't a issuer error, so return...
+            return false
+
+          if(msg == '' && issuerResponseDescription && issuerResponseCode != '00')
             msg = "Error: "+issuerResponseDescription
 
           if(msg == '' && (!issuerResponseCode || issuerResponseCode == '00'))

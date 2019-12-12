@@ -20,6 +20,40 @@ let fresh_fullsteam_transaction_data;
 let fresh_fullsteam_authentication_key_response_success;
 let fresh_fullsteam_token_response_success;
 
+describe('submit_transaction', () => {
+  beforeEach(() => {
+    // resetting the data variables before each test to ensure we are using fresh test data
+    // that hasn't been already mutated from a previous test
+    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
+    fresh_card_data = Object.assign({}, card_data);
+  });
+
+  test('submits the transaction for fullsteam if transaction processor is fullsteam', (done) => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_submit_fullsteam');
+    jest.spyOn(cc_processor, '_respond');
+    cc_processor._submit_fullsteam.mockImplementationOnce((card, transaction, cb) => Promise.resolve(successful_transaction_response));
+    cc_processor._respond.mockImplementationOnce((err, res, cb) => { cb(null, res); });
+
+    const mockCallback = jest.fn();
+    cc_processor.submit_transaction(fresh_card_data, fresh_fullsteam_transaction_data, (err, response) => {
+      expect(cc_processor._submit_fullsteam).toHaveBeenCalledTimes(1);
+      expect(cc_processor._submit_fullsteam).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, expect.any(Function));
+
+      expect(cc_processor._respond).toHaveBeenCalledTimes(1);
+      expect(cc_processor._respond).toHaveBeenCalledWith(false, successful_transaction_response, expect.any(Function));
+
+      expect(response).toEqual(successful_transaction_response);
+
+      cc_processor._submit_fullsteam.mockRestore();
+      cc_processor._respond.mockRestore();
+
+      done();
+    });
+  });
+});
+
 describe('_submit_fullsteam', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data

@@ -19,6 +19,40 @@ let fresh_card_data;
 let fresh_spreedly_transaction_data;
 let fresh_spreedly_token_response_error;
 
+describe('submit_transaction', () => {
+  beforeEach(() => {
+    // resetting the data variables before each test to ensure we are using fresh test data
+    // that hasn't been already mutated from a previous test
+    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+    fresh_card_data = Object.assign({}, card_data);
+  });
+
+  test('submits the transaction for spreedly if transaction processor is spreedly', (done) => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_submit_spreedly');
+    jest.spyOn(cc_processor, '_respond');
+    cc_processor._submit_spreedly.mockImplementationOnce((card, transaction, cb) => Promise.resolve(successful_transaction_response));
+    cc_processor._respond.mockImplementationOnce((err, res, cb) => { cb(null, res); });
+
+    const mockCallback = jest.fn();
+    cc_processor.submit_transaction(fresh_card_data, fresh_spreedly_transaction_data, (err, response) => {
+      expect(cc_processor._submit_spreedly).toHaveBeenCalledTimes(1);
+      expect(cc_processor._submit_spreedly).toHaveBeenCalledWith(fresh_card_data, fresh_spreedly_transaction_data, expect.any(Function));
+
+      expect(cc_processor._respond).toHaveBeenCalledTimes(1);
+      expect(cc_processor._respond).toHaveBeenCalledWith(false, successful_transaction_response, expect.any(Function));
+
+      expect(response).toEqual(successful_transaction_response);
+
+      cc_processor._submit_spreedly.mockRestore();
+      cc_processor._respond.mockRestore();
+
+      done();
+    });
+  });
+});
+
 describe('_submit_spreedly', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data

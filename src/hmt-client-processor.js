@@ -57,7 +57,7 @@ var hmt_client_processor = function(settings){
 
       // log the bad response here
       if(error)
-        this._log_bad_trans(transaction, res)
+        this._log_bad_trans(transaction)
 
       this._respond(error, res, cb)
       
@@ -854,7 +854,7 @@ var hmt_client_processor = function(settings){
 
   }
 
-  this._log_bad_trans = function(transaction, response){
+  this._log_bad_trans = function(transaction){
 
     try {
       

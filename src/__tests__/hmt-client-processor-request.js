@@ -1,4 +1,5 @@
 import hmt_client_processor from '../hmt-client-processor';
+import { successful_transaction_response } from '../test/test-data';
 
 const hmt_client_processor_settings = {
   api_url : 'http://holdmyticket.loc/api/',
@@ -262,5 +263,71 @@ describe('_xhr_fail', () => {
 
     const new_test_response = Object.assign({}, test_response, { statusText: 'ERROR' });
     expect(xhr_fail_response).toEqual(new_test_response);
+  });
+});
+
+describe('_respond', () => {
+  test('calls callback with response data', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const mockCallback = jest.fn();
+    cc_processor._respond(false, successful_transaction_response, mockCallback);
+
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledWith(null, successful_transaction_response);
+  });
+
+  test('calls callback with response data property if it exists', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const mockCallback = jest.fn();
+    const success_response = { data: successful_transaction_response, test: 'test value' };
+    cc_processor._respond(false, success_response, mockCallback);
+
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledWith(null, success_response.data);
+  });
+
+  test('returns and calls _throw_error if err param is true', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_throw_error');
+    cc_processor._throw_error.mockImplementationOnce((err, res, cb) => undefined);
+
+    const mockCallback = jest.fn();
+    cc_processor._respond(true, successful_transaction_response, mockCallback);
+
+    expect(cc_processor._throw_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._throw_error).toHaveBeenCalledWith(true, successful_transaction_response, mockCallback);
+
+    expect(mockCallback).toHaveBeenCalledTimes(0);
+
+    cc_processor._throw_error.mockRestore();
+  });
+});
+
+describe('_throw_error', () => {
+  test('if error is false and response msg property does exist then the error param is set to the response msg', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const mockCallback = jest.fn();
+    const response = { status: 'error', msg: 'this is an error message' };
+    
+    cc_processor._throw_error(false, response, mockCallback);
+
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledWith(response.msg, response);
+  });
+
+  test('if error is false and response msg property does NOT exist then the error param is set to true', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const mockCallback = jest.fn();
+    const response = { status: 'error' };
+    
+    cc_processor._throw_error(false, response, mockCallback);
+
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledWith(true, response);
   });
 });

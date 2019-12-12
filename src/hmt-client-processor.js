@@ -888,7 +888,7 @@ var hmt_client_processor = function(settings){
       var xhr = new XMLHttpRequest();
       xhr.open('POST', this.url('shop/carts/log_bad_trans', true), true);
       xhr.withCredentials = true
-      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8')
+      xhr.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8')
       xhr.send(this._serializer(d))
     
     } catch(error) {

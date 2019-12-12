@@ -36,7 +36,6 @@ describe('submit_transaction', () => {
     cc_processor._submit_fullsteam.mockImplementationOnce((card, transaction, cb) => Promise.resolve(successful_transaction_response));
     cc_processor._respond.mockImplementationOnce((err, res, cb) => { cb(null, res); });
 
-    const mockCallback = jest.fn();
     cc_processor.submit_transaction(fresh_card_data, fresh_fullsteam_transaction_data, (err, response) => {
       expect(cc_processor._submit_fullsteam).toHaveBeenCalledTimes(1);
       expect(cc_processor._submit_fullsteam).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, expect.any(Function));

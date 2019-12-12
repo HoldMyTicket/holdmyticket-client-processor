@@ -35,7 +35,6 @@ describe('submit_transaction', () => {
     cc_processor._submit_spreedly.mockImplementationOnce((card, transaction, cb) => Promise.resolve(successful_transaction_response));
     cc_processor._respond.mockImplementationOnce((err, res, cb) => { cb(null, res); });
 
-    const mockCallback = jest.fn();
     cc_processor.submit_transaction(fresh_card_data, fresh_spreedly_transaction_data, (err, response) => {
       expect(cc_processor._submit_spreedly).toHaveBeenCalledTimes(1);
       expect(cc_processor._submit_spreedly).toHaveBeenCalledWith(fresh_card_data, fresh_spreedly_transaction_data, expect.any(Function));

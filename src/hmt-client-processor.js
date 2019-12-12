@@ -730,7 +730,7 @@ var hmt_client_processor = function(settings){
   Request Responses 
   */
   
-  this._xhr_success = function(xhr, opts){
+  this._xhr_success = function(xhr){
     
     var res = {}
     
@@ -753,7 +753,7 @@ var hmt_client_processor = function(settings){
         
   }
 
-  this._xhr_fail = function(xhr, url, opts){
+  this._xhr_fail = function(xhr, url){
     
     var error = null
     

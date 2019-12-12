@@ -232,11 +232,6 @@ describe('_xhr_success', () => {
 
 describe('_xhr_fail', () => {
 
-  // beforeEach(() => {
-  //   mockXHR = createMockXHR(test_response);
-  //   window.XMLHttpRequest = jest.fn(() => mockXHR);
-  // });
-
   afterEach(() => {
     window.XMLHttpRequest = oldXMLHttpRequest;
   });

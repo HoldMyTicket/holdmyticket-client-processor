@@ -755,13 +755,13 @@ var hmt_client_processor = function(settings){
 
   this._xhr_fail = function(xhr, url){
     
-    var error = null
+    // var error = null
     
-    try {
-      error = JSON.parse(xhr.response)
-    } catch(error) {
-      console.log('could not parse error response')
-    }
+    // try {
+    //   error = JSON.parse(xhr.response)
+    // } catch(error) {
+    //   console.log('could not parse error response')
+    // }
     
     var res = {}
     

@@ -861,9 +861,19 @@ var hmt_client_processor = function(settings){
       // cloning object, so no ref
       var t = transaction ? this._copy_object(transaction) : null
 
-      // delete survey data
+      // delete survey data && change the way we send over renewable array, else we get Disallowed Key Characters from Code Igniter
       for(var key in t){
         if(key.indexOf('survey') > -1) delete t[key]
+
+        if(key.indexOf('renewable') > -1){
+          var renewable_copy = JSON.parse(JSON.stringify(key))
+          delete t[key]
+          
+          var renewable_ticket_key = renewable_copy.match(/\[(.*?)\]/)[1]
+          t.renewable = {}
+          t.renewable[renewable_ticket_key] = 'y'
+          
+        }
       }
       
       var d = { form_data: t, transaction: t }

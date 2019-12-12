@@ -235,6 +235,15 @@ describe('_get_fullsteam_contry_code', () => {
 
     expect(fullsteam_country_code_response).toBe('US');
   });
+
+  test('returns "US" country code if transaction does not have country_id', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    delete fresh_fullsteam_transaction_data.country_id;
+    const fullsteam_country_code_response = cc_processor._get_fullsteam_contry_code(fresh_fullsteam_transaction_data);
+
+    expect(fullsteam_country_code_response).toBe('US');
+  });
 });
 
 describe('fullsteam_url', () => {

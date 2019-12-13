@@ -200,9 +200,6 @@ var hmt_client_processor = function(settings){
 
     transaction.payment_token = token_res.token
 
-    if(transaction.payments)
-      transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
-
     var transaction_res = await this._submit_fullsteam_transaction(transaction)
     
     if(transaction_res && transaction_res.ticket_key)
@@ -338,6 +335,9 @@ var hmt_client_processor = function(settings){
   }
   
   this._submit_fullsteam_transaction = async function(transaction, cb){
+
+    if(transaction.payments)
+      transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
     
     transaction = this._remove_sensitive_card_data(transaction)
     

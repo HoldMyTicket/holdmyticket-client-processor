@@ -24,8 +24,8 @@ describe('submit_transaction', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
-    fresh_card_data = Object.assign({}, card_data);
+    fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
   });
 
   test('submits the transaction for fullsteam if transaction processor is fullsteam', (done) => {
@@ -103,10 +103,10 @@ describe('_submit_fullsteam', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
-    fresh_fullsteam_authentication_key_response_success = Object.assign({}, fullsteam_authentication_key_response_success);
-    fresh_fullsteam_token_response_success = Object.assign({}, fullsteam_token_response_success);
-    fresh_card_data = Object.assign({}, card_data);
+    fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
+    fresh_fullsteam_authentication_key_response_success = JSON.parse(JSON.stringify(fullsteam_authentication_key_response_success));
+    fresh_fullsteam_token_response_success = JSON.parse(JSON.stringify(fullsteam_token_response_success));
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
   });
 
   test('submits the transaction if payment token already exists', async () => {
@@ -157,7 +157,7 @@ describe('_get_fullsteam_auth_key', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_fullsteam_authentication_key_response_success = Object.assign({}, fullsteam_authentication_key_response_success);
+    fresh_fullsteam_authentication_key_response_success = JSON.parse(JSON.stringify(fullsteam_authentication_key_response_success));
   });
 
   test('returns fullsteam authentication key', async () => {
@@ -183,10 +183,10 @@ describe('_get_fullsteam_token', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
-    fresh_fullsteam_authentication_key_response_success = Object.assign({}, fullsteam_authentication_key_response_success);
-    fresh_fullsteam_token_response_success = Object.assign({}, fullsteam_token_response_success);
-    fresh_card_data = Object.assign({}, card_data);
+    fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
+    fresh_fullsteam_authentication_key_response_success = JSON.parse(JSON.stringify(fullsteam_authentication_key_response_success));
+    fresh_fullsteam_token_response_success = JSON.parse(JSON.stringify(fullsteam_token_response_success));
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
   });
 
   test('returns token and makes request with correct data', async () => {
@@ -235,13 +235,101 @@ describe('_get_fullsteam_token', () => {
 
     cc_processor._request.mockRestore();
   });
+
+  test('returns false and adds processing error if missing card', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_add_processing_error');
+    cc_processor._request.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_token_response_success));
+
+    const fullsteam_token_response = await cc_processor._get_fullsteam_token({}, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
+
+    expect(cc_processor._add_processing_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_processing_error).toHaveBeenCalledWith(expect.any(String));
+
+    expect(cc_processor.errors_processing).toHaveLength(1);
+
+    expect(fullsteam_token_response).toBe(false);
+
+    cc_processor._request.mockRestore();
+    cc_processor._add_processing_error.mockRestore();
+  });
+
+  test('returns false and adds processing error if missing card.payment_method', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_add_processing_error');
+    cc_processor._request.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_token_response_success));
+    
+    delete fresh_card_data.payment_method;
+
+    const fullsteam_token_response = await cc_processor._get_fullsteam_token(fresh_card_data, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
+
+    expect(cc_processor._add_processing_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_processing_error).toHaveBeenCalledWith(expect.any(String));
+
+    expect(cc_processor.errors_processing).toHaveLength(1);
+
+    expect(fullsteam_token_response).toBe(false);
+
+    cc_processor._request.mockRestore();
+    cc_processor._add_processing_error.mockRestore();
+  });
+
+  test('returns false and adds processing error if missing card.payment_method.credit_card', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_add_processing_error');
+    cc_processor._request.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_token_response_success));
+    
+    delete fresh_card_data.payment_method.credit_card;
+
+    const fullsteam_token_response = await cc_processor._get_fullsteam_token(fresh_card_data, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
+
+    expect(cc_processor._add_processing_error).toHaveBeenCalledTimes(1);
+    expect(cc_processor._add_processing_error).toHaveBeenCalledWith(expect.any(String));
+
+    expect(cc_processor.errors_processing).toHaveLength(1);
+
+    expect(fullsteam_token_response).toBe(false);
+
+    cc_processor._request.mockRestore();
+    cc_processor._add_processing_error.mockRestore();
+  });
+  
+  ['number', 'month', 'year', 'full_name', 'verification_value'].forEach(key => {
+    test(`returns false and adds processing error if missing card.payment_method.credit_card.${key}`, async () => {
+      const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+      jest.spyOn(cc_processor, '_request');
+      jest.spyOn(cc_processor, '_add_processing_error');
+      cc_processor._request.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_token_response_success));
+      
+      delete fresh_card_data.payment_method.credit_card[key];
+
+      const fullsteam_token_response = await cc_processor._get_fullsteam_token(fresh_card_data, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
+
+      expect(cc_processor._add_processing_error).toHaveBeenCalledTimes(1);
+      expect(cc_processor._add_processing_error).toHaveBeenCalledWith(expect.any(String));
+
+      expect(cc_processor.errors_processing).toHaveLength(1);
+
+      expect(fullsteam_token_response).toBe(false);
+
+      cc_processor._request.mockRestore();
+      cc_processor._add_processing_error.mockRestore();
+    });
+  });
 });
 
 describe('_submit_fullsteam_transaction', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
+    fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
   });
 
   test('submits the transaction', async () => {
@@ -271,7 +359,7 @@ describe('_get_fullsteam_contry_code', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
+    fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
   });
 
   test('returns country code', () => {

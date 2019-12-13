@@ -23,8 +23,8 @@ describe('submit_transaction', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
-    fresh_card_data = Object.assign({}, card_data);
+    fresh_spreedly_transaction_data = JSON.parse(JSON.stringify(spreedly_transaction_data));
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
   });
 
   test('submits the transaction for spreedly if transaction processor is spreedly', (done) => {
@@ -56,8 +56,8 @@ describe('_submit_spreedly', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
-    fresh_card_data = Object.assign({}, card_data);
+    fresh_spreedly_transaction_data = JSON.parse(JSON.stringify(spreedly_transaction_data));
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
   });
 
   test('submits the transaction if payment token already exists', async () => {
@@ -230,9 +230,9 @@ describe('_get_spreedly_token', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
-    fresh_card_data = Object.assign({}, card_data);
-    fresh_spreedly_token_response_error = Object.assign({}, spreedly_token_response_error);
+    fresh_spreedly_transaction_data = JSON.parse(JSON.stringify(spreedly_transaction_data));
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
+    fresh_spreedly_token_response_error = JSON.parse(JSON.stringify(spreedly_token_response_error));
   });
 
   test('returns token and makes request with correct data', async () => {
@@ -289,9 +289,9 @@ describe('_submit_spreedly_transaction', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
-    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
-    fresh_card_data = Object.assign({}, card_data);
-    fresh_spreedly_token_response_error = Object.assign({}, spreedly_token_response_error);
+    fresh_spreedly_transaction_data = JSON.parse(JSON.stringify(spreedly_transaction_data));
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
+    fresh_spreedly_token_response_error = JSON.parse(JSON.stringify(spreedly_token_response_error));
   });
 
   test('submits the transaction', async () => {

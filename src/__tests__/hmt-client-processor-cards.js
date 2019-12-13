@@ -30,10 +30,10 @@ let fresh_fullsteam_token_response_success;
 
 describe('save_card', () => {
   beforeEach(() => {
-    fresh_card_data = Object.assign({}, card_data);
-    fresh_successful_transaction_response = Object.assign({}, successful_transaction_response);
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
+    fresh_successful_transaction_response = JSON.parse(JSON.stringify(successful_transaction_response));
 
-    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+    fresh_spreedly_transaction_data = JSON.parse(JSON.stringify(spreedly_transaction_data));
   });
 
   test('calls the internal _save_card method with correct data', () => {
@@ -53,7 +53,7 @@ describe('save_card', () => {
 
 describe('webuser_save_card', () => {
   beforeEach(() => {
-    fresh_card_data = Object.assign({}, card_data);
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
   });
 
   test('calls the internal _webuser_save_card method with correct data', () => {
@@ -73,14 +73,14 @@ describe('webuser_save_card', () => {
 
 describe('_save_card', () => {
   beforeEach(() => {
-    fresh_card_data = Object.assign({}, card_data);
-    fresh_successful_transaction_response = Object.assign({}, successful_transaction_response);
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
+    fresh_successful_transaction_response = JSON.parse(JSON.stringify(successful_transaction_response));
 
-    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+    fresh_spreedly_transaction_data = JSON.parse(JSON.stringify(spreedly_transaction_data));
 
-    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
-    fresh_fullsteam_authentication_key_response_success = Object.assign({}, fullsteam_authentication_key_response_success);
-    fresh_fullsteam_token_response_success = Object.assign({}, fullsteam_token_response_success);
+    fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
+    fresh_fullsteam_authentication_key_response_success = JSON.parse(JSON.stringify(fullsteam_authentication_key_response_success));
+    fresh_fullsteam_token_response_success = JSON.parse(JSON.stringify(fullsteam_token_response_success));
   });
 
   test('calls _save_card_to_webuser for spreedly with correct data', async () => {
@@ -141,14 +141,14 @@ describe('_save_card', () => {
 
 describe('_save_card_to_webuser', () => {
   beforeEach(() => {
-    fresh_card_data = Object.assign({}, card_data);
-    fresh_successful_transaction_response = Object.assign({}, successful_transaction_response);
+    fresh_card_data = JSON.parse(JSON.stringify(card_data));
+    fresh_successful_transaction_response = JSON.parse(JSON.stringify(successful_transaction_response));
 
-    fresh_spreedly_transaction_data = Object.assign({}, spreedly_transaction_data);
+    fresh_spreedly_transaction_data = JSON.parse(JSON.stringify(spreedly_transaction_data));
 
-    fresh_fullsteam_transaction_data = Object.assign({}, fullsteam_transaction_data);
-    fresh_fullsteam_authentication_key_response_success = Object.assign({}, fullsteam_authentication_key_response_success);
-    fresh_fullsteam_token_response_success = Object.assign({}, fullsteam_token_response_success);
+    fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
+    fresh_fullsteam_authentication_key_response_success = JSON.parse(JSON.stringify(fullsteam_authentication_key_response_success));
+    fresh_fullsteam_token_response_success = JSON.parse(JSON.stringify(fullsteam_token_response_success));
   });
 
   test('calls request method with correct data', async () => {

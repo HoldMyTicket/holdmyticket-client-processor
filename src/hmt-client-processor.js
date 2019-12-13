@@ -9,6 +9,7 @@ var hmt_client_processor = function(settings){
   this.app_type = settings.app_type || '' // set prior to submit (online | box)
   this.isHmtMobile = settings.isHmtMobile || false
   this.auth = settings.app_type == 'box' && settings.auth || ''
+  this.spreedly_environment_key = settings.spreedly_environment_key || ''
   
   this.errors_internal = [] // errors to handle internally
   this.errors_processing = [] // errors to send back to clients regarding processing status
@@ -102,9 +103,6 @@ var hmt_client_processor = function(settings){
     
     if(this.spreedly_environment_key)
       return this.spreedly_environment_key
-
-    if(config && config.spreedly_environment_key)
-      return config.spreedly_environment_key
 
     return ''
     

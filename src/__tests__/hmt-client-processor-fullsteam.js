@@ -154,33 +154,39 @@ describe('_submit_fullsteam', () => {
     cc_processor._submit_fullsteam_transaction.mockRestore();
   });
 
-  // test('saves card for spreedly if transaction has cc_retain = y', async () => {
-  //   const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+  test('saves card for spreedly if transaction has cc_retain = y', async () => {
+    const client_processor_settings_with_spreedly_env_key = Object.assign({}, hmt_client_processor, { spreedly_environment_key: '12345' });
+    const cc_processor = new hmt_client_processor(client_processor_settings_with_spreedly_env_key);
 
-  //   jest.spyOn(cc_processor, '_get_fullsteam_auth_key');
-  //   jest.spyOn(cc_processor, '_get_fullsteam_token');
-  //   jest.spyOn(cc_processor, '_submit_fullsteam_transaction');
-  //   jest.spyOn(cc_processor, '_save_card_to_webuser');
-  //   jest.spyOn(cc_processor, '_save_card');
-  //   cc_processor._get_fullsteam_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
-  //   cc_processor._get_fullsteam_token.mockImplementationOnce((card, transaction, auth_key) => Promise.resolve(fresh_fullsteam_token_response_success));
-  //   cc_processor._submit_fullsteam_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
-  //   cc_processor._save_card_to_webuser.mockImplementationOnce((args) => Promise.resolve(undefined));
-  //   cc_processor._save_card.mockImplementationOnce((args) => Promise.resolve(undefined));
+    jest.spyOn(cc_processor, '_get_fullsteam_auth_key');
+    jest.spyOn(cc_processor, '_get_fullsteam_token');
+    jest.spyOn(cc_processor, '_submit_fullsteam_transaction');
+    jest.spyOn(cc_processor, '_save_card_to_webuser');
+    jest.spyOn(cc_processor, '_get_spreedly_env_key');
+    jest.spyOn(cc_processor, '_save_card');
+    cc_processor._get_fullsteam_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
+    cc_processor._get_fullsteam_token.mockImplementationOnce((card, transaction, auth_key) => Promise.resolve(fresh_fullsteam_token_response_success));
+    cc_processor._submit_fullsteam_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
+    cc_processor._save_card_to_webuser.mockImplementationOnce((args) => Promise.resolve(undefined));
+    cc_processor._save_card.mockImplementationOnce((args) => Promise.resolve(undefined));
 
-  //   fresh_fullsteam_transaction_data.cc_retain = 'y';
+    fresh_fullsteam_transaction_data.cc_retain = 'y';
     
-  //   const cc_processor_response = await cc_processor._submit_fullsteam(fresh_card_data, fresh_fullsteam_transaction_data);
+    const cc_processor_response = await cc_processor._submit_fullsteam(fresh_card_data, fresh_fullsteam_transaction_data);
 
-  //   expect(cc_processor._save_card).toHaveBeenCalledTimes(1);
-  //   expect(cc_processor._save_card).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, 'fullsteam');
+    expect(cc_processor._get_spreedly_env_key).toHaveBeenCalledTimes(1);
+    expect(cc_processor._get_spreedly_env_key).toHaveReturnedWith('12345');
+
+    expect(cc_processor._save_card).toHaveBeenCalledTimes(1);
+    expect(cc_processor._save_card).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, 'spreedly');
     
-  //   cc_processor._get_fullsteam_auth_key.mockRestore();
-  //   cc_processor._get_fullsteam_token.mockRestore();
-  //   cc_processor._submit_fullsteam_transaction.mockRestore();
-  //   cc_processor._save_card_to_webuser.mockRestore();
-  //   cc_processor._save_card.mockRestore();
-  // })
+    cc_processor._get_fullsteam_auth_key.mockRestore();
+    cc_processor._get_fullsteam_token.mockRestore();
+    cc_processor._submit_fullsteam_transaction.mockRestore();
+    cc_processor._save_card_to_webuser.mockRestore();
+    cc_processor._save_card.mockRestore();
+    cc_processor._get_spreedly_env_key.mockRestore();
+  })
 })
 
 describe('_get_fullsteam_auth_key', () => {

@@ -401,6 +401,42 @@ describe('_submit_fullsteam_transaction', () => {
 
     cc_processor._request.mockRestore();
   });
+
+  test('updates transaction payments array with payment_token if transaction object has payments array', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_update_payments_token');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve(successful_transaction_response));
+
+    const payments = [{ type: 'credit', amount: 10 }, { type: 'cash', amount: 5 }];
+    const payment_token = '111222333';
+
+    const expected_payments = [{ type: 'credit', amount: 10, payment_token: payment_token }, { type: 'cash', amount: 5 }];
+    const expected_fullsteam_transaction_data = Object.assign({}, fresh_fullsteam_transaction_data, { payment_token, payments: expected_payments });
+    
+    fresh_fullsteam_transaction_data.payments = payments;
+    fresh_fullsteam_transaction_data.payment_token = payment_token;
+
+    const fullsteam_submit_transaction_response = await cc_processor._submit_fullsteam_transaction(fresh_fullsteam_transaction_data);
+
+    expect(cc_processor._update_payments_token).toHaveBeenCalledTimes(1);
+    expect(cc_processor._update_payments_token).toHaveBeenCalledWith(expected_payments, payment_token);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/shop/carts/submit',
+      type: 'POST',
+      data: expected_fullsteam_transaction_data,
+      form_encoded: true,
+      withCredentials: true
+    });
+
+    expect(fullsteam_submit_transaction_response).toBe(successful_transaction_response);
+
+    cc_processor._update_payments_token.mockRestore();
+    cc_processor._request.mockRestore();
+  });
 });
 
 describe('_get_fullsteam_contry_code', () => {

@@ -74,7 +74,7 @@ var hmt_client_processor = function(settings){
       })
     }else{
       this._add_internal_error('No processing method setup')
-      response(false, cb)
+      response(false, cb, transaction)
     }
       
   }

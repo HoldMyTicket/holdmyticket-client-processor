@@ -51,6 +51,52 @@ describe('submit_transaction', () => {
       done();
     });
   });
+
+  test('adds an internal error if transaction does NOT have processor method', (done) => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_add_internal_error');
+    jest.spyOn(cc_processor, '_log_bad_trans');
+    jest.spyOn(cc_processor, '_respond');
+    cc_processor._respond.mockImplementationOnce((err, res, cb) => { cb(null, res); });
+    cc_processor._log_bad_trans.mockImplementationOnce(() => undefined);
+
+    delete fresh_fullsteam_transaction_data.processor_method;
+    
+    cc_processor.submit_transaction(fresh_card_data, {}, (err, response) => {
+      expect(cc_processor._add_internal_error).toHaveBeenCalledTimes(1);
+      expect(cc_processor._add_internal_error).toHaveBeenCalledWith(expect.any(String));
+
+      expect(cc_processor.errors_internal).toHaveLength(1);
+
+      cc_processor._add_internal_error.mockRestore();
+      cc_processor._respond.mockRestore();
+
+      done();
+    });
+  });
+
+  test('adds an internal error if transaction does NOT have processor method', (done) => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_add_internal_error');
+    jest.spyOn(cc_processor, '_log_bad_trans');
+    jest.spyOn(cc_processor, '_respond');
+    cc_processor._respond.mockImplementationOnce((err, res, cb) => { cb(null, res); });
+    cc_processor._log_bad_trans.mockImplementationOnce(() => undefined);
+
+    delete fresh_fullsteam_transaction_data.processor_method;
+    
+    cc_processor.submit_transaction(fresh_card_data, {test: 'test'}, (err, response) => {
+      expect(cc_processor._log_bad_trans).toHaveBeenCalledTimes(1);
+      expect(cc_processor._log_bad_trans).toHaveBeenCalledWith({test: 'test'})
+
+      cc_processor._add_internal_error.mockRestore();
+      cc_processor._respond.mockRestore();
+
+      done();
+    });
+  });
 });
 
 describe('_submit_fullsteam', () => {

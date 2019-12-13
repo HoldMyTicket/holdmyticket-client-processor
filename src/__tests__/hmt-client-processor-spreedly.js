@@ -77,7 +77,7 @@ describe('_submit_spreedly', () => {
     cc_processor._submit_spreedly_transaction.mockRestore();
   });
 
-  test('submits the transaction if payment token does NOT exist', async () => {
+  test('generates token and submits the transaction if payment token does NOT exist', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
     jest.spyOn(cc_processor, '_get_spreedly_token');

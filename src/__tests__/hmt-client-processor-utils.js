@@ -1,4 +1,8 @@
 import hmt_client_processor from '../hmt-client-processor';
+import {
+  transaction_data_with_survey,
+  correct_transaction_survey_form_data
+} from '../test/test-data';
 
 const hmt_client_processor_settings = {
   api_url : 'http://holdmyticket.loc/api/',
@@ -207,9 +211,15 @@ describe('_get_browser_info', () => {
   });
 });
 
-// describe('_serializer', () => {
+describe('_serializer', () => {
+  test('returns correct stringified transaction data with survey', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
-// });
+    const serializer_response = cc_processor._serializer(transaction_data_with_survey);
+
+    expect(serializer_response).toBe(correct_transaction_survey_form_data);
+  });
+});
 
 describe('_prepare_transaction', () => {
   test('formats the phone number in the transaction object', () => {

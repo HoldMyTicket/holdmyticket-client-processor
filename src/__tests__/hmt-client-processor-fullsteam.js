@@ -323,6 +323,54 @@ describe('_get_fullsteam_token', () => {
       cc_processor._add_processing_error.mockRestore();
     });
   });
+
+  test('removes the state property from clearTextCardData billing information if country code is NOT 2 (2 = US)', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_token_response_success));
+
+    fresh_fullsteam_transaction_data.country_id = '1';
+
+    const fullsteam_token_response = await cc_processor._get_fullsteam_token(fresh_card_data, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'https://api-ext.fullsteampay.net/api/token/card/clearText/create',
+      type: 'POST',
+      cors: true,
+      crossdomain: true,
+      data: {
+        "clearTextCardData": {
+          "cardNumber": '4111111111111111',
+          "cvv": fresh_card_data.payment_method.credit_card.verification_value,
+          "expirationMonth": fresh_card_data.payment_method.credit_card.month,
+          "expirationYear": fresh_card_data.payment_method.credit_card.year,
+          "billingInformation": {
+            "nameOnAccount": fresh_card_data.payment_method.credit_card.full_name,
+            "firstName": fresh_fullsteam_transaction_data.f_name,
+            "lastName": fresh_fullsteam_transaction_data.l_name,
+            "address1": fresh_fullsteam_transaction_data.address1,
+            "address2": null,
+            "city": fresh_fullsteam_transaction_data.city,
+            "zip": fresh_fullsteam_transaction_data.zip,
+            "country": 'US',
+            "phone": fresh_fullsteam_transaction_data.phone,
+            "email": fresh_fullsteam_transaction_data.email1,
+          }
+        },
+        "cardEntryContext": 5,
+        "performAccountVerification": true
+      },
+      json: true,
+      withCredentials : false,
+      auth_key: fresh_fullsteam_authentication_key_response_success.authenticationKey
+    });
+
+    expect(fullsteam_token_response).toBe(fresh_fullsteam_token_response_success);
+
+    cc_processor._request.mockRestore();
+  })
 });
 
 describe('_submit_fullsteam_transaction', () => {

@@ -863,7 +863,7 @@ var hmt_client_processor = function(settings){
       for(var key in t){
         if(key.indexOf('survey') > -1) delete t[key]
 
-        if(key.indexOf('renewable') > -1){
+        if(key.indexOf('renewable') > -1 && t[key].length > 0){
           var renewable_copy = JSON.parse(JSON.stringify(key))
           delete t[key]
           
@@ -891,7 +891,7 @@ var hmt_client_processor = function(settings){
     
     } catch(error) {
 
-      console.warn('Could not log bad trans')
+      console.warn('Could not log bad trans: ', error)
 
     }
 

@@ -465,6 +465,9 @@ var hmt_client_processor = function(settings){
       vault: 'spreedly'
     };
 
+    if(data.ticket_key)
+      request_data.ticket_key = data.ticket_key
+
     var save_credit_card_res = await this._request({
       url: this.url('public/users/save_credit_card', false),
       type: 'POST',
@@ -525,18 +528,21 @@ var hmt_client_processor = function(settings){
       ? this._format_card_for_save(card.payment_method.credit_card)
       : null;
 
-    var data = {
+    var additional_request_data = {
       webuser_id: webuser_id,
       vault: 'fullsteam',
       token: fullsteam_token_res.token,
       card_data: card_data
     };
 
+    if(data.ticket_key)
+      additional_request_data.ticket_key = data.ticket_key
+
     var save_additional_card_res = await this._request({
       url: this.url('public/users/save_additional_card', false),
       type: 'POST',
       withCredentials: this.isHmtMobile ? true : false,
-      data: data,
+      data: additional_request_data,
       form_encoded: true
     });
 

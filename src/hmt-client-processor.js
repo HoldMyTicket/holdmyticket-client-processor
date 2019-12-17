@@ -476,14 +476,16 @@ var hmt_client_processor = function(settings){
       form_encoded: true
     })
 
-    if (save_credit_card_res && save_credit_card_res.status == 'ok' && save_credit_card_res.statusText == 'OK')
+
+    if(save_credit_card_res && save_credit_card_res.status == 'ok' && save_credit_card_res.statusText == 'OK')
       res = save_credit_card_res // this will be the successfull res!
 
-    if (!save_credit_card_res || !save_credit_card_res.status || save_credit_card_res.status != 'ok') {
-      if (save_credit_card_res && save_credit_card_res.response && save_credit_card_res.response.msg)
-        this._add_processing_error(save_credit_card_res.response.msg)
+    if(!save_credit_card_res || !save_credit_card_res.status || save_credit_card_res.status != 'ok') {
 
-      if (!this.errors_processing && !this.errors_internal)
+      if(save_credit_card_res && save_credit_card_res.msg)
+        this._add_processing_error(save_credit_card_res.msg)
+
+      if(!this.errors_processing && !this.errors_internal)
         this._add_internal_error('Spreedly, Error saving credit card')
 
       this._respond(this.errors_processing, spreedly_token_res, cb)
@@ -494,7 +496,7 @@ var hmt_client_processor = function(settings){
 
     var env_key = null;
 
-    if (
+    if(
       authentication_key_res &&
       authentication_key_res.status &&
       authentication_key_res.status == 'ok' &&
@@ -502,22 +504,22 @@ var hmt_client_processor = function(settings){
     )
       env_key = authentication_key_res.authenticationKey;
 
-    if (!env_key) {
-      if (!this.errors_processing && !this.errors_internal)
+    if(!env_key) {
+      if(!this.errors_processing && !this.errors_internal)
         this._add_internal_error('Fullsteam, Could not get env_key');
 
       this._respond(this.errors_processing, authentication_key_res, cb)
       return
     }
 
-    if (!data.zip && card.payment_method.credit_card.zip)
+    if(!data.zip && card.payment_method.credit_card.zip)
       data.zip = card.payment_method.credit_card.zip
 
     var fullsteam_token_res = await this._get_fullsteam_token(card, data, env_key)
 
-    if (!fullsteam_token_res || !fullsteam_token_res.isSuccessful || !fullsteam_token_res.token) {
+    if(!fullsteam_token_res || !fullsteam_token_res.isSuccessful || !fullsteam_token_res.token) {
        // _get_fullsteam_token throws internal error for: !fullsteam_token_res || !fullsteam_token_res.isSuccessful
-      if (fullsteam_token_res && !fullsteam_token_res.token) // throw internal error when there is a fullsteam_token_res, but no token
+      if(fullsteam_token_res && !fullsteam_token_res.token) // throw internal error when there is a fullsteam_token_res, but no token
         this._add_internal_error('Fullsteam, Responded with no token')
 
       this._respond(this.errors_processing, authentication_key_res, cb)
@@ -546,15 +548,17 @@ var hmt_client_processor = function(settings){
       form_encoded: true
     });
 
-    if (!save_additional_card_res || !save_additional_card_res.status || save_additional_card_res.status != 'ok') {
+    if(!save_additional_card_res || !save_additional_card_res.status || save_additional_card_res.status != 'ok') {
+      //do not set error here - we will let if fail silently (we at least saved 1 vault)
+
       if (!this.errors_processing && !this.errors_internal)
-        this._add_internal_error('Fullsteam, Error saving credit card')
+        this._add_internal_error('Fullsteam, Error saving additional credit card')
 
       this._respond(this.errors_processing, save_credit_card_res, cb)
       return
     }
 
-    this._respond(false, res, cb);
+    this._respond(this.errors_processing, res, cb);
 
   }
   

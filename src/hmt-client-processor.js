@@ -468,7 +468,7 @@ var hmt_client_processor = function(settings){
     var save_credit_card_res = await this._request({
       url: this.url('public/users/save_credit_card', false),
       type: 'POST',
-      withCredentials: false,
+      withCredentials: this.isHmtMobile ? true : false,
       data: request_data,
       form_encoded: true
     })
@@ -535,7 +535,7 @@ var hmt_client_processor = function(settings){
     var save_additional_card_res = await this._request({
       url: this.url('public/users/save_additional_card', false),
       type: 'POST',
-      withCredentials: false,
+      withCredentials: this.isHmtMobile ? true : false,
       data: data,
       form_encoded: true
     });

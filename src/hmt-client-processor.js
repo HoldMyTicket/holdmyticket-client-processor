@@ -910,7 +910,7 @@ var hmt_client_processor = function(settings){
   
   this._get_browser_info = function() {
     
-    if(this.hmtMobile)
+    if(this.isHmtMobile)
       return { platform: 'hmtMobile' }
     
     return {

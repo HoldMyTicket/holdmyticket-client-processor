@@ -697,7 +697,7 @@ var hmt_client_processor = function(settings){
       if(opts.data)
         data = opts.data
 
-      if(this.auth && this.app_type == 'box' && url.indexOf('submit') > -1){
+      if(this.auth && this.app_type == 'box' && (url.indexOf('submit') > -1 || url.indexOf('get_authentication_key'))){
         url += (url.indexOf('?') > -1 ? '&' : '?') + 'auth='+this.auth
         if(typeof data == 'object')
           data.can_handle_fullsteam = 'true'

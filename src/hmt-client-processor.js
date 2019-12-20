@@ -465,22 +465,27 @@ var hmt_client_processor = function(settings){
       vault: 'spreedly'
     };
 
+    if(data.ticket_key)
+      request_data.ticket_key = data.ticket_key
+
     var save_credit_card_res = await this._request({
       url: this.url('public/users/save_credit_card', false),
       type: 'POST',
-      withCredentials: false,
+      withCredentials: this.isHmtMobile ? true : false,
       data: request_data,
       form_encoded: true
     })
 
-    if (save_credit_card_res && save_credit_card_res.status == 'ok' && save_credit_card_res.statusText == 'OK')
+
+    if(save_credit_card_res && save_credit_card_res.status == 'ok' && save_credit_card_res.statusText == 'OK')
       res = save_credit_card_res // this will be the successfull res!
 
-    if (!save_credit_card_res || !save_credit_card_res.status || save_credit_card_res.status != 'ok') {
-      if (save_credit_card_res && save_credit_card_res.response && save_credit_card_res.response.msg)
-        this._add_processing_error(save_credit_card_res.response.msg)
+    if(!save_credit_card_res || !save_credit_card_res.status || save_credit_card_res.status != 'ok') {
 
-      if (!this.errors_processing && !this.errors_internal)
+      if(save_credit_card_res && save_credit_card_res.msg)
+        this._add_processing_error(save_credit_card_res.msg)
+
+      if(!this.errors_processing && !this.errors_internal)
         this._add_internal_error('Spreedly, Error saving credit card')
 
       this._respond(this.errors_processing, spreedly_token_res, cb)
@@ -491,7 +496,7 @@ var hmt_client_processor = function(settings){
 
     var env_key = null;
 
-    if (
+    if(
       authentication_key_res &&
       authentication_key_res.status &&
       authentication_key_res.status == 'ok' &&
@@ -499,22 +504,22 @@ var hmt_client_processor = function(settings){
     )
       env_key = authentication_key_res.authenticationKey;
 
-    if (!env_key) {
-      if (!this.errors_processing && !this.errors_internal)
+    if(!env_key) {
+      if(!this.errors_processing && !this.errors_internal)
         this._add_internal_error('Fullsteam, Could not get env_key');
 
       this._respond(this.errors_processing, authentication_key_res, cb)
       return
     }
 
-    if (!data.zip && card.payment_method.credit_card.zip)
+    if(!data.zip && card.payment_method.credit_card.zip)
       data.zip = card.payment_method.credit_card.zip
 
     var fullsteam_token_res = await this._get_fullsteam_token(card, data, env_key)
 
-    if (!fullsteam_token_res || !fullsteam_token_res.isSuccessful || !fullsteam_token_res.token) {
+    if(!fullsteam_token_res || !fullsteam_token_res.isSuccessful || !fullsteam_token_res.token) {
        // _get_fullsteam_token throws internal error for: !fullsteam_token_res || !fullsteam_token_res.isSuccessful
-      if (fullsteam_token_res && !fullsteam_token_res.token) // throw internal error when there is a fullsteam_token_res, but no token
+      if(fullsteam_token_res && !fullsteam_token_res.token) // throw internal error when there is a fullsteam_token_res, but no token
         this._add_internal_error('Fullsteam, Responded with no token')
 
       this._respond(this.errors_processing, authentication_key_res, cb)
@@ -525,30 +530,35 @@ var hmt_client_processor = function(settings){
       ? this._format_card_for_save(card.payment_method.credit_card)
       : null;
 
-    var data = {
+    var additional_request_data = {
       webuser_id: webuser_id,
       vault: 'fullsteam',
       token: fullsteam_token_res.token,
       card_data: card_data
     };
 
+    if(data.ticket_key)
+      additional_request_data.ticket_key = data.ticket_key
+
     var save_additional_card_res = await this._request({
       url: this.url('public/users/save_additional_card', false),
       type: 'POST',
-      withCredentials: false,
-      data: data,
+      withCredentials: this.isHmtMobile ? true : false,
+      data: additional_request_data,
       form_encoded: true
     });
 
-    if (!save_additional_card_res || !save_additional_card_res.status || save_additional_card_res.status != 'ok') {
+    if(!save_additional_card_res || !save_additional_card_res.status || save_additional_card_res.status != 'ok') {
+      //do not set error here - we will let if fail silently (we at least saved 1 vault)
+
       if (!this.errors_processing && !this.errors_internal)
-        this._add_internal_error('Fullsteam, Error saving credit card')
+        this._add_internal_error('Fullsteam, Error saving additional credit card')
 
       this._respond(this.errors_processing, save_credit_card_res, cb)
       return
     }
 
-    this._respond(false, res, cb);
+    this._respond(this.errors_processing, res, cb);
 
   }
   
@@ -687,7 +697,7 @@ var hmt_client_processor = function(settings){
       if(opts.data)
         data = opts.data
 
-      if(this.auth && this.app_type == 'box' && url.indexOf('submit') > -1){
+      if(this.auth && this.app_type == 'box' && (url.indexOf('submit') > -1 || url.indexOf('get_authentication_key'))){
         url += (url.indexOf('?') > -1 ? '&' : '?') + 'auth='+this.auth
         if(typeof data == 'object')
           data.can_handle_fullsteam = 'true'
@@ -769,7 +779,8 @@ var hmt_client_processor = function(settings){
     try {
       res = JSON.parse(xhr.responseText)
     } catch(error) {
-      console.log('could not parse the response to json')
+      console.log('xhr error', error)
+      console.log('could not parse the response to json', xhr)
     }
 
     if(!res.status && res.status !== 'error')
@@ -863,7 +874,7 @@ var hmt_client_processor = function(settings){
       for(var key in t){
         if(key.indexOf('survey') > -1) delete t[key]
 
-        if(key.indexOf('renewable') > -1){
+        if(key.indexOf('renewable') > -1 && t[key].length > 0){
           var renewable_copy = JSON.parse(JSON.stringify(key))
           delete t[key]
           
@@ -891,7 +902,7 @@ var hmt_client_processor = function(settings){
     
     } catch(error) {
 
-      console.warn('Could not log bad trans')
+      console.warn('Could not log bad trans: ', error)
 
     }
 
@@ -910,7 +921,7 @@ var hmt_client_processor = function(settings){
   
   this._get_browser_info = function() {
     
-    if(this.hmtMobile)
+    if(this.isHmtMobile)
       return { platform: 'hmtMobile' }
     
     return {

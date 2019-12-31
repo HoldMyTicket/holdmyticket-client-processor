@@ -625,6 +625,14 @@ var hmt_client_processor = function(settings){
           });
         }
 
+        if (check_charge_worker_res.status == 'ok' && check_charge_worker_res.worker.status == 'terminated') {
+          console.log(check_charge_worker_res, 'the worker res TERMINATED');
+          resolve({
+            status: 'error',
+            msg: 'There was an error processing your transaction.'
+          });
+        }
+
         if (check_charge_worker_res.status == 'ok' && check_charge_worker_res.worker.status == 'error') {
           console.log(check_charge_worker_res, 'the worker res ERROR');
           resolve({

@@ -163,7 +163,7 @@ var hmt_client_processor = function(settings){
 
     if (this.charge_workers) {
       console.log('here in CHARGE WORKERS submit - SPREEDLY');
-      var charge_worker_res = await this._request({
+      var create_charge_worker_res = await this._request({
         url: this.url('shop/carts/create_charge_worker', true),
         type: 'POST',
         data: transaction,
@@ -171,8 +171,8 @@ var hmt_client_processor = function(settings){
         withCredentials: true
       });
 
-      console.log(charge_worker_res, 'the charge worker response - SPREEDLY');
-      var transaction_res = await this._check_charge_worker(charge_worker_res.worker_reference);
+      console.log(create_charge_worker_res, 'the create charge worker response - SPREEDLY');
+      var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);
     } else {
       console.log('here in ORIGINAL submit - SPREEDLY');
       var transaction_res = await this._request({
@@ -357,7 +357,7 @@ var hmt_client_processor = function(settings){
 
     if (this.charge_workers) {
       console.log('here in CHARGE WORKERS submit - FULLSTEAM');
-      var charge_worker_res = await this._request({
+      var create_charge_worker_res = await this._request({
         url: this.url('shop/carts/create_charge_worker', true),
         type: 'POST',
         data: transaction,
@@ -365,8 +365,8 @@ var hmt_client_processor = function(settings){
         withCredentials: true
       });
 
-      console.log(charge_worker_res, 'the charge worker response - FULLSTEAM');
-      var transaction_res = await this._check_charge_worker(charge_worker_res.worker_reference);
+      console.log(create_charge_worker_res, 'the create charge worker response - FULLSTEAM');
+      var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);
     } else {
       console.log('here in ORIGINAL submit - FULLSTEAM');
       var transaction_res = await this._request({

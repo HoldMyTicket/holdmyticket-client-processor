@@ -170,6 +170,9 @@ var hmt_client_processor = function(settings){
         form_encoded: true,
         withCredentials: true
       });
+      
+      if (create_charge_worker_res.status == 'error')
+        return this._add_processing_error('There was an error processing your transaction.');
 
       console.log(create_charge_worker_res, 'the create charge worker response - SPREEDLY');
       var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);
@@ -364,6 +367,9 @@ var hmt_client_processor = function(settings){
         form_encoded: true,
         withCredentials: true
       });
+
+      if (create_charge_worker_res.status == 'error')
+        return this._add_processing_error('There was an error processing your transaction.');
 
       console.log(create_charge_worker_res, 'the create charge worker response - FULLSTEAM');
       var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);

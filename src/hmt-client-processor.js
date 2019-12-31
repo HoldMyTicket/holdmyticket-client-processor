@@ -607,7 +607,7 @@ var hmt_client_processor = function(settings){
           (check_charge_worker_res.worker.status == 'waiting' || check_charge_worker_res.worker.status == 'running')
         ) {
           console.log(check_charge_worker_res, 'the worker res WAITING/RUNNING');
-          setTimeout(check_charge, 10000)
+          setTimeout(check_charge, 5000)
         }
 
         if (check_charge_worker_res.status == 'ok' && check_charge_worker_res.worker.status == 'done') {

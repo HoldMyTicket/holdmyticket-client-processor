@@ -296,3 +296,123 @@ describe('_copy_object', () => {
     expect(copy_object_response).toBe(false);
   });
 });
+
+describe('_check_charge_worker', () => {
+  test('resolves promise when worker status is DONE', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve({
+      status: 'ok',
+      worker: {
+        status: 'done', 
+        log: { ticket_key: '1234' }
+      }
+    }));
+
+    const worker_reference = '12345';
+    const check_charge_worker_response = await cc_processor._check_charge_worker(worker_reference);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: `http://holdmyticket.loc/api/shop/carts/get_charge_worker_status/${worker_reference}`,
+      withCredentials: true
+    });
+    
+    expect(check_charge_worker_response).toEqual({
+      status: 'ok',
+      msg: 'Charge successful',
+      ticket_key: '1234'
+    });
+    
+    cc_processor._request.mockRestore();
+  });
+
+  test('resolves promise when worker status is TERMINATED', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve({
+      status: 'ok',
+      worker: {
+        status: 'terminated'
+      }
+    }));
+
+    const worker_reference = '12345';
+    const check_charge_worker_response = await cc_processor._check_charge_worker(worker_reference);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: `http://holdmyticket.loc/api/shop/carts/get_charge_worker_status/${worker_reference}`,
+      withCredentials: true
+    });
+    
+    expect(check_charge_worker_response).toEqual({
+      status: 'error',
+      msg: 'There was an error processing your transaction.'
+    });
+    
+    cc_processor._request.mockRestore();
+  });
+
+  test('resolves promise when worker status is ERROR', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve({
+      status: 'ok',
+      worker: {
+        status: 'error', 
+        log: { status: 'error', msg: 'An error occured' }
+      }
+    }));
+
+    const worker_reference = '12345';
+    const check_charge_worker_response = await cc_processor._check_charge_worker(worker_reference);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: `http://holdmyticket.loc/api/shop/carts/get_charge_worker_status/${worker_reference}`,
+      withCredentials: true
+    });
+    
+    expect(check_charge_worker_response).toEqual({
+      status: 'error',
+      msg: 'An error occured'
+    });
+    
+    cc_processor._request.mockRestore();
+  });
+  
+  test('schedules another get_charge_worker_status request to run in 5 seconds if worker status is WAITING', async () => {
+    jest.useFakeTimers();
+
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve({
+      status: 'ok',
+      worker: {
+        status: 'waiting'
+      }
+    }));
+    
+    const worker_reference = '12345';
+    const check_charge_worker_response = cc_processor._check_charge_worker(worker_reference);
+
+    // more info here on why this call is here - https://stackoverflow.com/questions/52417761/testing-a-recursive-polling-function-with-jest-and-fake-timers
+    await Promise.resolve();
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: `http://holdmyticket.loc/api/shop/carts/get_charge_worker_status/${worker_reference}`,
+      withCredentials: true
+    });
+
+    expect(setTimeout).toHaveBeenCalledTimes(1);
+    expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
+    
+    cc_processor._request.mockRestore();
+  });
+});

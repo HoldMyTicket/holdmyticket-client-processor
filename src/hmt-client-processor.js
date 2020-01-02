@@ -598,6 +598,11 @@ var hmt_client_processor = function(settings){
     this._respond(this.errors_processing, res, cb);
 
   }
+  
+
+  /*
+  Utilities
+  */
 
   this._check_charge_worker = async function(worker_reference) {
     return new Promise((resolve) => {
@@ -646,11 +651,6 @@ var hmt_client_processor = function(settings){
       console.log('kickoff check charge');
     });
   }
-  
-
-  /*
-  Utilities
-  */
 
   this._update_payments_token = function(payments, payment_token){
     

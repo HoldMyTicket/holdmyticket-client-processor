@@ -1,6 +1,7 @@
 import hmt_client_processor from '../hmt-client-processor';
 import {
   successful_transaction_response,
+  successful_create_charge_worker_response,
   card_data,
   fullsteam_transaction_data,
   fullsteam_payment_token,
@@ -436,6 +437,62 @@ describe('_submit_fullsteam_transaction', () => {
     expect(fullsteam_submit_transaction_response).toBe(successful_transaction_response);
 
     cc_processor._request.mockRestore();
+  });
+
+  test('submits the transaction using charge worker endpoint when charge_workers setting is enabled', async () => {
+    const copied_hmt_client_processor_settings = JSON.parse(JSON.stringify(hmt_client_processor_settings));
+    copied_hmt_client_processor_settings.charge_workers = true;
+    const cc_processor = new hmt_client_processor(copied_hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_check_charge_worker');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve(successful_create_charge_worker_response));
+    cc_processor._check_charge_worker.mockImplementationOnce(() => undefined);
+
+    const fullsteam_submit_transaction_response = await cc_processor._submit_fullsteam_transaction(fresh_fullsteam_transaction_data);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/shop/carts/create_charge_worker',
+      type: 'POST',
+      data: fresh_fullsteam_transaction_data,
+      form_encoded: true,
+      withCredentials: true
+    });
+
+    expect(cc_processor._check_charge_worker).toHaveBeenCalledTimes(1);
+    expect(cc_processor._check_charge_worker).toHaveBeenCalledWith(successful_create_charge_worker_response.worker_reference);
+
+    cc_processor._request.mockRestore();
+    cc_processor._check_charge_worker.mockRestore();
+  });
+
+  test('returns false and adds a processing error if the create_charge_worker response has a error status', async () => {
+    const copied_hmt_client_processor_settings = JSON.parse(JSON.stringify(hmt_client_processor_settings));
+    copied_hmt_client_processor_settings.charge_workers = true;
+    const cc_processor = new hmt_client_processor(copied_hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_add_processing_error');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve({ status: 'error' }));
+
+    const fullsteam_submit_transaction_response = await cc_processor._submit_fullsteam_transaction(fresh_fullsteam_transaction_data);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/shop/carts/create_charge_worker',
+      type: 'POST',
+      data: fresh_fullsteam_transaction_data,
+      form_encoded: true,
+      withCredentials: true
+    });
+
+    expect(cc_processor._add_processing_error).toHaveBeenCalledTimes(1);
+    
+    expect(fullsteam_submit_transaction_response).toBe(false);
+
+    cc_processor._request.mockRestore();
+    cc_processor._add_processing_error.mockRestore();
   });
 
   test('updates transaction payments array with payment_token if transaction object has payments array', async () => {

@@ -6,6 +6,49 @@ export const successful_transaction_response = {
   "status":"ok"
 };
 
+export const successful_create_charge_worker_response = {
+  "request_number":30,
+  "worker_reference":"%2FS3TeYYkrTfYDrUEpZoOhAHcnydi3Oc44rFDEs%2BEKJDyCEh9d4pF5DvMW%2B9YtsN%2F",
+  "msg":"charge worker created",
+  "status":"ok"
+}
+
+export const successful_check_charge_worker_response = {
+  "request_number":71,
+  "worker":{
+    "id":"288",
+    "status":"done",
+    "log":{
+      "ticket_key":"4fde52cd892847de8cbc8d36e3d86727",
+      "buyer":{
+        "id":"2779236",
+        "f_name":"test",
+        "l_name":"test",
+        "company_name":null,
+        "address1":"test address 123",
+        "address2":"",
+        "city":"Albuquerque",
+        "state":"NM",
+        "zip":"87121",
+        "phone":"",
+        "email":"test@email.com",
+        "date_approved":"2020-01-02 11:32:33",
+        "trans_type":"credit",
+        "transid":"026-3222237081",
+        "ticket_key":"4fde52cd892847de8cbc8d36e3d86727",
+        "sales_src":"mini",
+        "l4":"1111",
+        "cc_exp":"12\/2021",
+        "rank":null
+      },
+      "buyers_data":[],
+      "barcodes":[{"id":"10064519","event_id":"347327","buyer_id":"2779236","ticket_id":"329168","buyer_seat_id":"0","upc":"IQLTPCT6FGTKZM","name_on_ticket":null,"scan_alert":null,"parent_barcode_id":null,"ticket_desc":"21+ General Admission","price":"10.00","seat_zone":null,"seat_row":null,"seat_seat":null,"seat_x":null,"seat_y":null,"reusable":"","reusable_count":null,"child_event_limit":null,"delivery_method":"willcall","is_child_ticket":"n"}]
+    }
+  },
+  "msg":"Worker status found",
+  "status":"ok"
+}
+
 export const card_data = {
   payment_method: {
     credit_card: {

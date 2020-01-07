@@ -831,8 +831,11 @@ var hmt_client_processor = function(settings){
       if(data && opts.json && typeof data == 'string')
         d = JSON.parse(data)
       
-      if(d.clearTextCardData)
-        delete d.clearTextCardData
+      if(d.clearTextCardData && d.clearTextCardData.cvv)
+        delete d.clearTextCardData.cvv
+
+      if(d.payment_method && d.payment_method.credit_card && d.payment_method.credit_card.verification_value)
+        delete d.payment_method.credit_card.verification_value
 
       var log = this._prepare_for_log({
         url: url,

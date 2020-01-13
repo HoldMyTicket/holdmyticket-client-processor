@@ -10,6 +10,7 @@ var hmt_client_processor = function(settings){
   this.isHmtMobile = settings.isHmtMobile || false
   this.auth = settings.app_type == 'box' && settings.auth || ''
   this.spreedly_environment_key = settings.spreedly_environment_key || ''
+  this.charge_workers = settings.charge_workers || false
   
   this.errors_internal = [] // errors to handle internally
   this.errors_processing = [] // errors to send back to clients regarding processing status
@@ -161,17 +162,35 @@ var hmt_client_processor = function(settings){
       transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
     
     transaction = this._remove_sensitive_card_data(transaction)
-    
-    var transaction_res = await this._request({
-      url: this.url('shop/carts/submit', true),
-      type: 'POST',
-      data: transaction,
-      form_encoded: true,
-      withCredentials: true
-    })
 
+    if (this.charge_workers) {
+      console.log('here in CHARGE WORKERS submit - SPREEDLY');
+      var create_charge_worker_res = await this._request({
+        url: this.url('shop/carts/create_charge_worker', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+      
+      if (create_charge_worker_res.status == 'error')
+        return this._add_processing_error('There was an error processing your transaction.');
+
+      console.log(create_charge_worker_res, 'the create charge worker response - SPREEDLY');
+      var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);
+    } else {
+      console.log('here in ORIGINAL submit - SPREEDLY');
+      var transaction_res = await this._request({
+        url: this.url('shop/carts/submit', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+    }
+
+    console.log(transaction_res, 'returned transaction res - SPREEDLY');
     return transaction_res
-
   }
   
   /* FULLSTEAM */
@@ -340,15 +359,33 @@ var hmt_client_processor = function(settings){
       transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
     
     transaction = this._remove_sensitive_card_data(transaction)
-    
-    var transaction_res = await this._request({
-      url: this.url('shop/carts/submit', true),
-      type: 'POST',
-      data: transaction,
-      form_encoded: true,
-      withCredentials: true
-    })
 
+    if (this.charge_workers) {
+      console.log('here in CHARGE WORKERS submit - FULLSTEAM');
+      var create_charge_worker_res = await this._request({
+        url: this.url('shop/carts/create_charge_worker', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+
+      if (create_charge_worker_res.status == 'error')
+        return this._add_processing_error('There was an error processing your transaction.');
+
+      console.log(create_charge_worker_res, 'the create charge worker response - FULLSTEAM');
+      var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);
+    } else {
+      console.log('here in ORIGINAL submit - FULLSTEAM');
+      var transaction_res = await this._request({
+        url: this.url('shop/carts/submit', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+    }
+    console.log(transaction_res, 'returned transaction res - FULLSTEAM');
     return transaction_res
     
   }
@@ -568,6 +605,54 @@ var hmt_client_processor = function(settings){
   /*
   Utilities
   */
+
+  this._check_charge_worker = async function(worker_reference) {
+    return new Promise((resolve) => {
+
+      const check_charge = async () => {
+        var check_charge_worker_res = await this._request({
+          url: this.url('shop/carts/get_charge_worker_status/' + worker_reference, true),
+          withCredentials: true
+        });
+
+        if (
+          check_charge_worker_res.status == 'ok' && 
+          (check_charge_worker_res.worker.status == 'waiting' || check_charge_worker_res.worker.status == 'running')
+        ) {
+          console.log(check_charge_worker_res, 'the worker res WAITING/RUNNING');
+          setTimeout(check_charge, 5000)
+        }
+
+        if (check_charge_worker_res.status == 'ok' && check_charge_worker_res.worker.status == 'done') {
+          console.log(check_charge_worker_res, 'the worker res DONE');
+          resolve({
+            status: 'ok',
+            msg: 'Charge successful',
+            ticket_key: check_charge_worker_res.worker.log.ticket_key
+          });
+        }
+
+        if (check_charge_worker_res.status == 'ok' && check_charge_worker_res.worker.status == 'terminated') {
+          console.log(check_charge_worker_res, 'the worker res TERMINATED');
+          resolve({
+            status: 'error',
+            msg: 'There was an error processing your transaction.'
+          });
+        }
+
+        if (check_charge_worker_res.status == 'ok' && check_charge_worker_res.worker.status == 'error') {
+          console.log(check_charge_worker_res, 'the worker res ERROR');
+          resolve({
+            status: check_charge_worker_res.worker.log.status,
+            msg: check_charge_worker_res.worker.log.msg
+          });
+        }
+      }
+      
+      check_charge();
+      console.log('kickoff check charge');
+    });
+  }
 
   this._update_payments_token = function(payments, payment_token){
     

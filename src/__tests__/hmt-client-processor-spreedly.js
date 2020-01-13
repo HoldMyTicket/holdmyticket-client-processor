@@ -1,6 +1,7 @@
 import hmt_client_processor from '../hmt-client-processor';
 import {
   successful_transaction_response,
+  successful_create_charge_worker_response,
   card_data,
   spreedly_transaction_data,
   spreedly_payment_token,
@@ -316,6 +317,62 @@ describe('_submit_spreedly_transaction', () => {
     cc_processor._request.mockRestore();
   });
 
+  test('submits the transaction using charge worker endpoint when charge_workers setting is enabled', async () => {
+    const copied_hmt_client_processor_settings = JSON.parse(JSON.stringify(hmt_client_processor_settings));
+    copied_hmt_client_processor_settings.charge_workers = true;
+    const cc_processor = new hmt_client_processor(copied_hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_check_charge_worker');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve(successful_create_charge_worker_response));
+    cc_processor._check_charge_worker.mockImplementationOnce(() => undefined);
+
+    const spreedly_submit_transaction_response = await cc_processor._submit_spreedly_transaction(fresh_spreedly_transaction_data);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/shop/carts/create_charge_worker',
+      type: 'POST',
+      data: fresh_spreedly_transaction_data,
+      form_encoded: true,
+      withCredentials: true
+    });
+
+    expect(cc_processor._check_charge_worker).toHaveBeenCalledTimes(1);
+    expect(cc_processor._check_charge_worker).toHaveBeenCalledWith(successful_create_charge_worker_response.worker_reference);
+
+    cc_processor._request.mockRestore();
+    cc_processor._check_charge_worker.mockRestore();
+  });
+
+  test('returns false and adds a processing error if the create_charge_worker response has a error status', async () => {
+    const copied_hmt_client_processor_settings = JSON.parse(JSON.stringify(hmt_client_processor_settings));
+    copied_hmt_client_processor_settings.charge_workers = true;
+    const cc_processor = new hmt_client_processor(copied_hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_request');
+    jest.spyOn(cc_processor, '_add_processing_error');
+    cc_processor._request.mockImplementationOnce((opts) => Promise.resolve({ status: 'error' }));
+
+    const spreedly_submit_transaction_response = await cc_processor._submit_spreedly_transaction(fresh_spreedly_transaction_data);
+
+    expect(cc_processor._request).toHaveBeenCalledTimes(1);
+    expect(cc_processor._request).toHaveBeenCalledWith({
+      url: 'http://holdmyticket.loc/api/shop/carts/create_charge_worker',
+      type: 'POST',
+      data: fresh_spreedly_transaction_data,
+      form_encoded: true,
+      withCredentials: true
+    });
+
+    expect(cc_processor._add_processing_error).toHaveBeenCalledTimes(1);
+    
+    expect(spreedly_submit_transaction_response).toBe(false);
+
+    cc_processor._request.mockRestore();
+    cc_processor._add_processing_error.mockRestore();
+  });
+
   test('updates transaction payments array with payment_token if transaction object has payments array', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
@@ -361,5 +418,28 @@ describe('spreedly_url', () => {
     const spreedly_url_response = cc_processor.spreedly_url(spreedly_environment_key);
 
     expect(spreedly_url_response).toBe(`https://core.spreedly.com/v1/payment_methods.json?environment_key=${spreedly_environment_key}`)
+  });
+});
+
+describe('_get_spreedly_env_key', () => {
+  test('returns the spreedly environment key that was passed in as a setting', () => {
+    const copied_hmt_client_processor_settings = JSON.parse(JSON.stringify(hmt_client_processor_settings));
+
+    const env_key = '12345';
+    copied_hmt_client_processor_settings.spreedly_environment_key = env_key;
+
+    const cc_processor = new hmt_client_processor(copied_hmt_client_processor_settings);
+
+    const spreedly_env_key_response = cc_processor._get_spreedly_env_key();
+
+    expect(spreedly_env_key_response).toBe(env_key)
+  });
+
+  test('returns empty string if no environment key was passed in as a setting', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    const spreedly_env_key_response = cc_processor._get_spreedly_env_key();
+
+    expect(spreedly_env_key_response).toBe('');
   });
 });

@@ -119,7 +119,9 @@ var hmt_client_processor = function(settings){
     var token_res = await this._get_spreedly_token(card, transaction.spreedly_environment_key)
     
     if(!token_res || !token_res.transaction || !token_res.transaction.payment_method || !token_res.transaction.payment_method.token) {
-      this._add_processing_error('Unable to charge card. Please check Adblocker / Firewall settings and try again.')
+      if(!token_res){
+        this._add_processing_error('Unable to charge card. Please check Adblocker / Firewall settings and try again.')
+      }
       return this._add_internal_error('Spreedly, Could not get token');
     }
 

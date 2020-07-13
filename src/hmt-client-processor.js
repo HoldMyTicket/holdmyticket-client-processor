@@ -236,6 +236,7 @@ var hmt_client_processor = function(settings){
     
     var token_res = await this._request({
       url: this.url('shop/processors/get_authentication_key', true),
+      withCredentials: true
     })
     
     return token_res

@@ -11,7 +11,8 @@ var hmt_client_processor = function(settings){
   this.auth = settings.app_type == 'box' && settings.auth || ''
   this.spreedly_environment_key = settings.spreedly_environment_key || ''
   this.charge_workers = settings.charge_workers || false
-  
+  this.captcha_token = settings.captcha_token || false
+
   this.errors_internal = [] // errors to handle internally
   this.errors_processing = [] // errors to send back to clients regarding processing status
 
@@ -24,35 +25,35 @@ var hmt_client_processor = function(settings){
     return this.api_url + endpoint + (use_suffix ? this.api_url_suffix : '')
 
   }
-  
+
   this.spreedly_url = function(spreedly_environment_key){
 
     return 'https://core.spreedly.com/v1/payment_methods.json?environment_key='+spreedly_environment_key
-    
+
   }
-  
+
   this.fullsteam_url = function(){
 
     return 'https://api'+(this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? '-ext' : '')+'.fullsteampay.net/'
 
   }
-  
+
   /*
   PUBLIC FUNCTIONS
   */
-  
+
   // main function that the client will call to submit transactions
   this.submit_transaction = function(card, transaction, cb){
-    
+
     this._clear_state()
-    
+
     transaction = this._prepare_transaction(transaction)
-    
+
     var response = (result, cb, transaction) => {
-      
+
       var error = !result ? true : false
       var res = result ? result : { status: 'error', errors: this.errors_processing }
-      
+
       // just pass back the cb_data here, and not everywhere else
       if(transaction.cb_data)
         res.cb_data = transaction.cb_data
@@ -62,9 +63,9 @@ var hmt_client_processor = function(settings){
         this._log_bad_trans(transaction)
 
       this._respond(error, res, cb)
-      
+
     }
-    
+
     // determine the method to use spreedly | fullsteam
     if(transaction.processor_method == 'spreedly'){
       this._submit_spreedly(card, transaction, cb).then((result) => {
@@ -78,9 +79,9 @@ var hmt_client_processor = function(settings){
       this._add_internal_error('No processing method setup')
       response(false, cb, transaction)
     }
-      
+
   }
-  
+
   // public fn, calling internal so internal can be async
   this.save_card = function(card, transaction, processor, ticket_key){
 
@@ -93,31 +94,31 @@ var hmt_client_processor = function(settings){
     this._webuser_save_card(card, data, webuser_id, cb)
 
   }
-  
+
   /*
   PRIVATE FUNCTIONS
   */
-  
-  /* SPREEDLY */  
-  
+
+  /* SPREEDLY */
+
   this._get_spreedly_env_key = function(){
-    
+
     if(this.spreedly_environment_key)
       return this.spreedly_environment_key
 
     return ''
-    
+
   }
-  
+
   this._submit_spreedly = async function(card, transaction){
 
     // saved payment tokens can be submitted without needing to create a token, simply submit payment token
     if (transaction.payment_token)
       return await this._submit_spreedly_transaction(transaction)
 
-    // if no token, then lets get token from spreedly and 
+    // if no token, then lets get token from spreedly and
     var token_res = await this._get_spreedly_token(card, transaction.spreedly_environment_key)
-    
+
     if(!token_res || !token_res.transaction || !token_res.transaction.payment_method || !token_res.transaction.payment_method.token) {
       if(!token_res){
         this._add_processing_error('Unable to charge card. Please check Adblocker / Firewall settings and try again.')
@@ -128,17 +129,17 @@ var hmt_client_processor = function(settings){
     transaction.payment_token = token_res.transaction.payment_method.token
 
     var transaction_res = await this._submit_spreedly_transaction(transaction)
-    
+
     if(transaction_res && transaction_res.ticket_key)
       this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
 
     if(transaction.cc_retain && transaction.cc_retain == 'y')
       this._save_card(card, transaction, 'fullsteam')
-    
+
     return transaction_res
 
   }
-  
+
   this._get_spreedly_token = async function(card, spreedly_environment_key, cb){
 
     var token = await this._request({
@@ -148,21 +149,21 @@ var hmt_client_processor = function(settings){
       json: true,
       data: card
     })
-    
+
     if(token.errors && token.errors.length > 0){
       for(var key in token.errors)
         this._add_processing_error(token.errors[key].message)
     }
 
     return token
-    
+
   }
-  
+
   this._submit_spreedly_transaction = async function(transaction, cb){
-    
+
     if(transaction.payments)
       transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
-    
+
     transaction = this._remove_sensitive_card_data(transaction)
 
     if (this.charge_workers) {
@@ -173,7 +174,7 @@ var hmt_client_processor = function(settings){
         form_encoded: true,
         withCredentials: true
       });
-      
+
       if (create_charge_worker_res.status == 'error')
         return this._add_processing_error('There was an error processing your transaction.');
 
@@ -190,35 +191,35 @@ var hmt_client_processor = function(settings){
 
     return transaction_res
   }
-  
+
   /* FULLSTEAM */
 
   this._submit_fullsteam = async function(card, transaction, cb){
-    
+
     // saved payment tokens can be submitted without needing to create a token, simply submit payment token
     if (transaction.payment_token)
       return await this._submit_fullsteam_transaction(transaction)
-        
+
     var authentication_key_res = await this._get_fullsteam_auth_key()
-    
+
     var auth_key = null
-    
-    if(authentication_key_res && 
-      authentication_key_res.status && 
-      authentication_key_res.status == 'ok' && 
+
+    if(authentication_key_res &&
+      authentication_key_res.status &&
+      authentication_key_res.status == 'ok' &&
       authentication_key_res.authenticationKey
     )
       auth_key = authentication_key_res.authenticationKey
-      
+
     var token_res = await this._get_fullsteam_token(card, transaction, auth_key)
-    
+
     if(!token_res || !token_res.isSuccessful)
       return false
 
     transaction.payment_token = token_res.token
 
     var transaction_res = await this._submit_fullsteam_transaction(transaction)
-    
+
     if(transaction_res && transaction_res.ticket_key)
       this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
 
@@ -227,32 +228,37 @@ var hmt_client_processor = function(settings){
         transaction.spreedly_environment_key = this._get_spreedly_env_key()
       this._save_card(card, transaction, 'spreedly')
     }
-    
+
     return transaction_res
 
   }
 
   this._get_fullsteam_auth_key = async function(){
-    
+
+    var url = 'shop/processors/get_authentication_key'
+
+    if(this.captcha_token)
+      url += '?captcha_token='+this.captcha_token
+
     var token_res = await this._request({
-      url: this.url('shop/processors/get_authentication_key', true),
+      url: this.url(url, true),
       withCredentials: true
     })
-    
+
     return token_res
-    
+
   }
 
   this._get_fullsteam_token = async function(card, transaction, auth_key, cb){
-    
+
     if(
-      !card || 
-      !card.payment_method || 
-      !card.payment_method.credit_card || 
-      !card.payment_method.credit_card.number || 
-      !card.payment_method.credit_card.month || 
-      !card.payment_method.credit_card.year || 
-      !card.payment_method.credit_card.full_name || 
+      !card ||
+      !card.payment_method ||
+      !card.payment_method.credit_card ||
+      !card.payment_method.credit_card.number ||
+      !card.payment_method.credit_card.month ||
+      !card.payment_method.credit_card.year ||
+      !card.payment_method.credit_card.full_name ||
       !card.payment_method.credit_card.verification_value
     ){
       this._add_processing_error('Missing required card inputs')
@@ -285,7 +291,7 @@ var hmt_client_processor = function(settings){
 
     if(transaction.country_id && transaction.country_id != '2')
       delete data.clearTextCardData.billingInformation.state
-    
+
     var res = await this._request({
       url: this.fullsteam_url() + 'api/token/card/clearText/create',
       type: 'POST',
@@ -296,21 +302,21 @@ var hmt_client_processor = function(settings){
       withCredentials : false,
       auth_key: auth_key
     })
-    
+
     // handle any processing errors here
     if(!res || !res.isSuccessful){
-      
+
       this._add_internal_error('Fullsteam, Could not get token')
-      
+
       var msg = ''
-      
+
       if(res && res.responseDetails){
         for(var key in res.responseDetails)
           this._add_processing_error(res.responseDetails[key].message)
       }
 
       if(res && res.issuerResponseDetails){
-        
+
         var issuerResponseCode = res.issuerResponseDetails.issuerResponseCode || 0
         var issuerResponseDescription = res.issuerResponseDetails.issuerResponseDescription || ''
         var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode && ['M', 'P'].indexOf(res.issuerResponseDetails.cvvResponseCode) == -1 ? res.issuerResponseDetails.cvvResponseCode : 0
@@ -318,9 +324,9 @@ var hmt_client_processor = function(settings){
         //we only look for cvv not M (match), P (not processed) cvv
 
         if(CVVResponseDescription){
-          
+
           msg = "CVV Error: "+CVVResponseDescription; //takes precedence
-          
+
         } else {
 
           if(this.errors_processing.length > 0 && issuerResponseCode == '00') // we already have processing error, and there isn't a issuer error, so return...
@@ -332,31 +338,31 @@ var hmt_client_processor = function(settings){
           if(msg == '' && (!issuerResponseCode || issuerResponseCode == '00'))
             msg = "CPE2: Missing error code"
 
-          if(msg == '') 
+          if(msg == '')
             msg = "CPE3: Unknown issuer error"
 
         }
-        
+
       }
 
       if(msg == '' && this.errors_processing.length == 0)
         msg = 'Unable to charge card. Please check Adblocker / Firewall settings and try again.' // CPE4 ERROR
-        
+
       this._add_processing_error(msg)
-    
+
       return false
-    
+
     }
-    
+
     return res
 
   }
-  
+
   this._submit_fullsteam_transaction = async function(transaction, cb){
 
     if(transaction.payments)
       transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
-    
+
     transaction = this._remove_sensitive_card_data(transaction)
 
     if (this.charge_workers) {
@@ -383,11 +389,11 @@ var hmt_client_processor = function(settings){
     }
 
     return transaction_res
-    
+
   }
-  
+
   this._get_fullsteam_contry_code = function(transaction){
-    
+
     //country_id from HMT. return intnl country_code
 
     var hmt_country_id = transaction.country_id || '2'
@@ -396,13 +402,13 @@ var hmt_client_processor = function(settings){
       return this.country_codes[hmt_country_id]
 
     return 'US';
-    
+
   }
-  
+
   /* Card Saving Fns */
-  
+
   this._save_card = async function(card, transaction, processor, ticket_key){
-    
+
     if(!card || !card.payment_method || !card.payment_method.credit_card)
       return
 
@@ -415,7 +421,7 @@ var hmt_client_processor = function(settings){
       args.ticket_key = ticket_key
 
     if(processor == 'spreedly'){
-      
+
       var token_res = await this._get_spreedly_token(card, transaction.spreedly_environment_key)
 
       if(!token_res)
@@ -429,11 +435,11 @@ var hmt_client_processor = function(settings){
     }
 
     if(processor == 'fullsteam'){
-      
+
       var authentication_key_res = await this._get_fullsteam_auth_key()
 
       var env_key = null
-      
+
       if(authentication_key_res && authentication_key_res.status && authentication_key_res.status == 'ok' && authentication_key_res.authenticationKey)
         env_key = authentication_key_res.authenticationKey
 
@@ -446,11 +452,11 @@ var hmt_client_processor = function(settings){
         return
 
       args.token = token_res.token;
-      
+
       this._save_card_to_webuser(args);
 
     }
-    
+
   }
 
   this._save_card_to_webuser = async function(args){
@@ -475,7 +481,7 @@ var hmt_client_processor = function(settings){
         data: data,
         form_encoded: true
       })
-      
+
     }
 
   }
@@ -524,7 +530,7 @@ var hmt_client_processor = function(settings){
         this._add_internal_error('Spreedly, Error saving credit card')
 
       this._respond(this.errors_processing, spreedly_token_res, cb)
-      return 
+      return
     }
 
     var authentication_key_res = await this._get_fullsteam_auth_key()
@@ -596,7 +602,7 @@ var hmt_client_processor = function(settings){
     this._respond(this.errors_processing, res, cb);
 
   }
-  
+
 
   /*
   Utilities
@@ -612,7 +618,7 @@ var hmt_client_processor = function(settings){
         });
 
         if (
-          check_charge_worker_res.status == 'ok' && 
+          check_charge_worker_res.status == 'ok' &&
           (check_charge_worker_res.worker.status == 'waiting' || check_charge_worker_res.worker.status == 'running')
         ) {
           setTimeout(check_charge, 5000)
@@ -640,13 +646,13 @@ var hmt_client_processor = function(settings){
           });
         }
       }
-      
+
       check_charge();
     });
   }
 
   this._update_payments_token = function(payments, payment_token){
-    
+
     //for split payments we need the token
     for(var i =0; i < payments.length; i++){
       var payment = payments[i]
@@ -654,11 +660,11 @@ var hmt_client_processor = function(settings){
         payments[i].payment_token = payment_token
     }
     return payments
-    
+
   }
 
   this._format_card_for_save = function(card_data){
-    
+
     if(!card_data.full_name)
       return false
     if(!card_data.month)
@@ -674,20 +680,20 @@ var hmt_client_processor = function(settings){
       exp_month : card_data.month,
       exp_year : card_data.year,
     }
-    
+
   }
-  
+
   this._format_phone_number = function(phone_number) {
 
     // \D stands for any non digit
     return phone_number.replace(/\D/g, '');
-    
+
   }
 
   this._get_last_four = function(cc_num){
-    
+
     return cc_num.substr(cc_num.length - 4)
-    
+
   }
 
   this._remember_card_data = function(args){
@@ -700,11 +706,11 @@ var hmt_client_processor = function(settings){
       this.card_processor = args.processor
     if(args.ticket_key)
       this.card_ticket_key = args.ticket_key
-      
+
   }
 
   this._clear_state = function(){
-    
+
     this.errors_internal = []
     this.errors_processing = []
 
@@ -712,7 +718,7 @@ var hmt_client_processor = function(settings){
     delete this.card_token
     delete this.card_processor
     delete this.card_ticket_key
-    
+
   }
 
   this._remove_sensitive_card_data = function(data){
@@ -726,43 +732,43 @@ var hmt_client_processor = function(settings){
     delete data.ksn
 
     return data
-    
+
   }
-  
-  /* 
+
+  /*
   Main Request Fn
   */
-  
+
   this._request = async function(opts){
 
     return new Promise((resolve, reject) => {
 
       // default
       var headers = {}
-      
+
       if(opts.json)
         headers['content-type'] = 'application/json;charset=UTF-8'
-      
+
       if(opts.form_encoded){
         headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-        
+
         if (opts.data.payments) {
-          
+
           var payments = opts.data.payments;
           delete opts.data.payments;
 
           var stringifiedPostData = this._serializer(opts.data);
           var stringifiedPayments = this._serializer({ payments: payments }, true);
           stringifiedPostData = stringifiedPostData + '&' + stringifiedPayments;
-          
+
         } else {
-          
+
           var stringifiedPostData = this._serializer(opts.data);
-          
+
         }
-        
+
         opts.data = stringifiedPostData;
-        
+
       }
 
       if(opts.auth_key)
@@ -771,7 +777,7 @@ var hmt_client_processor = function(settings){
       var url = opts.url
 
       var data
-      
+
       if(opts.data)
         data = opts.data
 
@@ -790,12 +796,12 @@ var hmt_client_processor = function(settings){
       var xhr = new XMLHttpRequest();
       xhr.open(opts.type || 'GET', url);
       xhr.withCredentials = opts.withCredentials || false;
-      
+
       for(var key in headers)
         xhr.setRequestHeader(key, headers[key])
-        
+
       xhr.onreadystatechange = (evt) => {
-        
+
         if (xhr.readyState === 4){
 
           this._logger(url, data, xhr, opts)
@@ -804,25 +810,25 @@ var hmt_client_processor = function(settings){
             resolve(this._xhr_success(xhr))
           else
             resolve(this._xhr_fail(xhr, url))
-          
+
         }
-        
+
       }
-      
+
       xhr.send(data)
-    
+
     })
-    
+
   }
-  
-  /* 
-  Request Responses 
+
+  /*
+  Request Responses
   */
-  
+
   this._xhr_success = function(xhr){
-    
+
     var res = {}
-    
+
     try {
       res = JSON.parse(xhr.responseText)
     } catch(error) {
@@ -837,23 +843,23 @@ var hmt_client_processor = function(settings){
     // to get around it we'll set the prop manually for status 200 so we can pass any checks for it in the lib
     if (this.isHmtMobile && !res.statusText)
       res.statusText = 'OK';
-  
+
     return res
-        
+
   }
 
   this._xhr_fail = function(xhr, url){
-    
+
     // var error = null
-    
+
     // try {
     //   error = JSON.parse(xhr.response)
     // } catch(error) {
     //   console.log('could not parse error response')
     // }
-    
+
     var res = {}
-    
+
     try {
       res = JSON.parse(xhr.responseText)
     } catch(error) {
@@ -884,31 +890,31 @@ var hmt_client_processor = function(settings){
         cb(null, res)
       }
     }
-    
+
   }
-  
+
   this._throw_error = function(err, res, cb){
-        
+
     if(!err && res.msg)
       err = res.msg
-    
+
     if(!err)
       err = true
-    
+
     if(cb)
       cb(err, res)
-    
+
   }
 
   this._logger = function(url, data, xhr, opts){
-    
+
     try {
 
       var d = {}
-      
+
       if(data && opts.json && typeof data == 'string')
         d = JSON.parse(data)
-      
+
       if(d.clearTextCardData && d.clearTextCardData.cvv)
         delete d.clearTextCardData.cvv
 
@@ -930,7 +936,7 @@ var hmt_client_processor = function(settings){
         },
         browser_info: this._get_browser_info()
       })
-      
+
       var xhr = new XMLHttpRequest();
       xhr.open('POST', this.url('shop/processors/logme2342311', true), true);
       xhr.withCredentials = true
@@ -947,7 +953,7 @@ var hmt_client_processor = function(settings){
   this._log_bad_trans = function(transaction){
 
     try {
-      
+
       // cloning object, so no ref
       var t = transaction ? this._copy_object(transaction) : null
 
@@ -958,29 +964,29 @@ var hmt_client_processor = function(settings){
         if(key.indexOf('renewable') > -1 && t[key].length > 0){
           var renewable_copy = JSON.parse(JSON.stringify(key))
           delete t[key]
-          
+
           var renewable_ticket_key = renewable_copy.match(/\[(.*?)\]/)[1]
           t.renewable = {}
           t.renewable[renewable_ticket_key] = 'y'
-          
+
         }
       }
-      
+
       var d = { form_data: t, transaction: t }
 
       d.form_data.errors_internal = this.errors_internal
       d.form_data.errors_processing = this.errors_processing
-      
+
       if(!d.transaction.processor)
         d.transaction.processor = { merch_gateway: transaction.processor_method ? transaction.processor_method : null }
       d.transaction.error_msg = this.errors_processing.join("\n")
-      
+
       var xhr = new XMLHttpRequest();
       xhr.open('POST', this.url('shop/carts/log_bad_trans', true), true);
       xhr.withCredentials = true
       xhr.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8')
       xhr.send(this._serializer(d))
-    
+
     } catch(error) {
 
       console.warn('Could not log bad trans: ', error)
@@ -990,28 +996,28 @@ var hmt_client_processor = function(settings){
   }
 
   this._prepare_for_log = function(data){
-    
+
     var str = JSON.stringify(data)
 
     // mask cc data
     str = str.replace(/\b(?:\d{4}[ -]?){3}(?=\d{4}\b)/gm, `**** **** **** `)
-    
+
     return str
 
   }
-  
+
   this._get_browser_info = function() {
-    
+
     if(this.isHmtMobile)
       return { platform: 'hmtMobile' }
-    
+
     return {
       platform: navigator && navigator.platform ? navigator.platform : '',
       userAgent: navigator && navigator.userAgent ? navigator.userAgent : '',
       vendor: navigator && navigator.vendor ? navigator.vendor : '',
       vendorSub: navigator && navigator.vendorSub ? navigator.vendorSub : '',
     }
-    
+
   }
 
   // deep serialize object to form data
@@ -1033,20 +1039,20 @@ var hmt_client_processor = function(settings){
     //     }
     //     pairs.push(prop + '=' + obj[prop]);
     // }
-    // 
+    //
     // return pairs.join('&');
 
   }
 
   // prepare the transaction data prior to submitting
   this._prepare_transaction = function(transaction){
-    
+
     // removing all phone special chars. Only allow numbers
     if (transaction.phone)
       transaction.phone = this._format_phone_number(transaction.phone);
-    
+
     return transaction
-    
+
   }
 
   // add a internal error
@@ -1060,7 +1066,7 @@ var hmt_client_processor = function(settings){
     this.errors_processing.push(err)
     return false
   }
-  
+
   this._copy_object = function(obj){
 
     try {
@@ -1070,7 +1076,7 @@ var hmt_client_processor = function(settings){
     } catch(error) {
       return false
     }
-    
+
   }
 
 }

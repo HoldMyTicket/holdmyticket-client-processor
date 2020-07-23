@@ -241,7 +241,7 @@ var hmt_client_processor = function(settings){
       url += '?captcha_token='+this.captcha_token
 
     var token_res = await this._request({
-      url: this.url(url, true),
+      url: this.url(url, false),
       withCredentials: true
     })
 

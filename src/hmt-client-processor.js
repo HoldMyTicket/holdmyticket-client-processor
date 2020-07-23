@@ -237,11 +237,8 @@ var hmt_client_processor = function(settings){
 
     var url = 'shop/processors/get_authentication_key'
 
-    if(this.captcha_token)
-      url += '?captcha_token='+this.captcha_token
-
     var token_res = await this._request({
-      url: this.url(url, false),
+      url: this.url(url, true)+(this.captcha_token ? '?captcha_token='+this.captcha_token : ''),
       withCredentials: true
     })
 

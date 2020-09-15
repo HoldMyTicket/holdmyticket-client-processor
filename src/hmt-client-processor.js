@@ -38,6 +38,10 @@ var hmt_client_processor = function(settings){
 
   }
 
+  this.auth_key_url = function(){
+    return 'shop/processors/get_authentication_key'
+  }
+
   /*
   PUBLIC FUNCTIONS
   */
@@ -73,6 +77,10 @@ var hmt_client_processor = function(settings){
       })
     }else if(transaction.processor_method == 'fullsteam'){
       this._submit_fullsteam(card, transaction, cb).then((result) => {
+        response(result, cb, transaction)
+      })
+    }else if(transaction.processor_method == 'authnet'){
+      this._submit_authnet(card, transaction, cb).then((result) => {
         response(result, cb, transaction)
       })
     }else{
@@ -200,7 +208,7 @@ var hmt_client_processor = function(settings){
     if (transaction.payment_token)
       return await this._submit_fullsteam_transaction(transaction)
 
-    var authentication_key_res = await this._get_fullsteam_auth_key()
+    var authentication_key_res = await this._get_auth_key()
 
     var auth_key = null
 
@@ -233,12 +241,19 @@ var hmt_client_processor = function(settings){
 
   }
 
-  this._get_fullsteam_auth_key = async function(){
-
-    var url = 'shop/processors/get_authentication_key'
+  this._get_auth_key = async function(transaction){
+    //hit HMT servers to get a public key used for obtaining card token
+    console.log('transaction', transaction)
+    var processor_hash = transaction && transaction.processor_hash ? transaction.processor_hash : ''
+    console.log('processor_hash', processor_hash)
+    var params = {}
+    if(this.captcha_token)
+      params.captcha_token = this.captcha_token;
+    if(processor_hash)
+      params.processor_hash = processor_hash;
 
     var token_res = await this._request({
-      url: this.url(url, true)+(this.captcha_token ? '?captcha_token='+this.captcha_token : ''),
+      url: this.url(this.auth_key_url(), true)+(params ? '?'+(new URLSearchParams(params)).toString() : ''),
       withCredentials: true
     })
 
@@ -402,6 +417,90 @@ var hmt_client_processor = function(settings){
 
   }
 
+  /* AUTHNET */
+  this._submit_authnet = async function(card, transaction, cb){
+    console.log('card', card)
+    console.log('transaction', transaction)
+
+
+    // saved payment tokens can be submitted without needing to create a token, simply submit payment token
+    if (transaction.payment_token)
+      return await this._submit_authnet_transaction(transaction)
+
+    var authentication_key_res = await this._get_auth_key(transaction)
+
+    console.log('authentication_key_res', authentication_key_res)
+
+    var auth_key = null
+
+    // if(authentication_key_res &&
+    //   authentication_key_res.status &&
+    //   authentication_key_res.status == 'ok' &&
+    //   authentication_key_res.auth_key &&
+    //   authentication_key_res.auth_user 
+    // )
+    //   auth_key = authentication_key_res.auth_key
+
+    var token_res = await this._get_authnet_token(card, transaction, authentication_key_res)
+
+    if(!token_res || !token_res.isSuccessful)
+      return false
+
+    transaction.payment_token = token_res.token
+
+    var transaction_res = await this._submit_authnet_transaction(transaction)
+
+    if(transaction_res && transaction_res.ticket_key)
+      this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
+
+    if(transaction.cc_retain && transaction.cc_retain == 'y'){
+      if(!transaction.spreedly_environment_key)
+        transaction.spreedly_environment_key = this._get_spreedly_env_key()
+      this._save_card(card, transaction, 'spreedly')
+    }
+
+    return transaction_res
+
+  }
+
+  this._get_authnet_token = async function(card, transaction, auth, cb){
+
+    if(
+      !card ||
+      !card.payment_method ||
+      !card.payment_method.credit_card ||
+      !card.payment_method.credit_card.number ||
+      !card.payment_method.credit_card.month ||
+      !card.payment_method.credit_card.year ||
+      !card.payment_method.credit_card.full_name ||
+      !card.payment_method.credit_card.verification_value
+    ){
+      this._add_processing_error('Missing required card inputs')
+      return false
+    }
+
+    var authData = {};
+      authData.clientKey = auth.auth_key;
+      authData.apiLoginID = auth.auth_user;
+
+    var cardData = {};
+      cardData.cardNumber = card.payment_method.credit_card.number;
+      cardData.month = card.payment_method.credit_card.month;
+      cardData.year = card.payment_method.credit_card.year;
+      cardData.cardCode = card.payment_method.credit_card.verification_value;
+
+    var secureData = {};
+      secureData.authData = authData;
+      secureData.cardData = cardData;
+
+      Accept.dispatchData(secureData, function(res){
+        console.log('anet res', res)
+      });
+
+  }
+  this._submit_authnet_transaction = async function(transaction, cb){}
+  this._get_authnet_contry_code = function(transaction){}
+
   /* Card Saving Fns */
 
   this._save_card = async function(card, transaction, processor, ticket_key){
@@ -433,7 +532,7 @@ var hmt_client_processor = function(settings){
 
     if(processor == 'fullsteam'){
 
-      var authentication_key_res = await this._get_fullsteam_auth_key()
+      var authentication_key_res = await this._get_auth_key()
 
       var env_key = null
 
@@ -530,7 +629,7 @@ var hmt_client_processor = function(settings){
       return
     }
 
-    var authentication_key_res = await this._get_fullsteam_auth_key()
+    var authentication_key_res = await this._get_auth_key()
 
     var env_key = null;
 

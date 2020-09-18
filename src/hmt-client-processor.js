@@ -21,21 +21,15 @@ var hmt_client_processor = function(settings){
   }
 
   this.url = function(endpoint, use_suffix){
-
     return this.api_url + endpoint + (use_suffix ? this.api_url_suffix : '')
-
   }
 
   this.spreedly_url = function(spreedly_environment_key){
-
     return 'https://core.spreedly.com/v1/payment_methods.json?environment_key='+spreedly_environment_key
-
   }
 
   this.fullsteam_url = function(){
-
     return 'https://api'+(this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? '-ext' : '')+'.fullsteampay.net/'
-
   }
 
   this.auth_key_url = function(){
@@ -443,10 +437,10 @@ var hmt_client_processor = function(settings){
 
     var token_res = await this._get_authnet_token(card, transaction, authentication_key_res)
 
-    if(!token_res || !token_res.isSuccessful)
+    if(!token_res || !token_res.opaqueData | !token_res.opaqueData.dataValue)
       return false
 
-    transaction.payment_token = token_res.token
+    transaction.payment_token = token_res.opaqueData.dataValue
 
     var transaction_res = await this._submit_authnet_transaction(transaction)
 
@@ -484,7 +478,7 @@ var hmt_client_processor = function(settings){
       authData.apiLoginID = auth.auth_user;
 
     var cardData = {};
-      cardData.cardNumber = card.payment_method.credit_card.number;
+      cardData.cardNumber = card.payment_method.credit_card.number.replace(/\s/g, '');
       cardData.month = card.payment_method.credit_card.month;
       cardData.year = card.payment_method.credit_card.year;
       cardData.cardCode = card.payment_method.credit_card.verification_value;
@@ -493,12 +487,48 @@ var hmt_client_processor = function(settings){
       secureData.authData = authData;
       secureData.cardData = cardData;
 
+    return new Promise((resolve, reject) => {
       Accept.dispatchData(secureData, function(res){
-        console.log('anet res', res)
+        resolve(res)
       });
+    })
+
 
   }
-  this._submit_authnet_transaction = async function(transaction, cb){}
+
+
+  this._submit_authnet_transaction = async function(transaction, cb){
+    if (transaction.payments)
+      transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
+
+    transaction = this._remove_sensitive_card_data(transaction)
+
+    if (this.charge_workers) {
+      var create_charge_worker_res = await this._request({
+        url: this.url('shop/carts/create_charge_worker', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+
+      if (create_charge_worker_res.status == 'error')
+        return this._add_processing_error('There was an error processing your transaction.');
+
+      var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);
+    } else {
+      var transaction_res = await this._request({
+        url: this.url('shop/carts/submit', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+    }
+
+    return transaction_res
+  }
+
   this._get_authnet_contry_code = function(transaction){}
 
   /* Card Saving Fns */

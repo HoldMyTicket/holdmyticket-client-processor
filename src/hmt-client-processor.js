@@ -64,7 +64,7 @@ var hmt_client_processor = function(settings){
 
     }
 
-    // determine the method to use spreedly | fullsteam
+    // determine the method to use spreedly | fullsteam | authnet
     if(transaction.processor_method == 'spreedly'){
       this._submit_spreedly(card, transaction, cb).then((result) => {
         response(result, cb, transaction)
@@ -416,46 +416,59 @@ var hmt_client_processor = function(settings){
     console.log('card', card)
     console.log('transaction', transaction)
 
+    //This data
+    transaction.card_data = {
+      full_name: card.payment_method.credit_card.full_name,
+      month: card.payment_method.credit_card.month,
+      year: card.payment_method.credit_card.year
+    }
 
     // saved payment tokens can be submitted without needing to create a token, simply submit payment token
     if (transaction.payment_token)
       return await this._submit_authnet_transaction(transaction)
 
+
     var authentication_key_res = await this._get_auth_key(transaction)
 
-    console.log('authentication_key_res', authentication_key_res)
 
-    var auth_key = null
+    if(!authentication_key_res.status ||
+      authentication_key_res.status != 'ok' ||
+      !authentication_key_res.auth_key)
+      return false
 
-    // if(authentication_key_res &&
-    //   authentication_key_res.status &&
-    //   authentication_key_res.status == 'ok' &&
-    //   authentication_key_res.auth_key &&
-    //   authentication_key_res.auth_user 
-    // )
-    //   auth_key = authentication_key_res.auth_key
 
     var token_res = await this._get_authnet_token(card, transaction, authentication_key_res)
-
-    if(!token_res || !token_res.opaqueData | !token_res.opaqueData.dataValue)
+    if(!this._is_valid_authnet_response(token_res))
       return false
+
+    if(!token_res || !token_res.opaqueData || !token_res.opaqueData.dataValue){
+      this._add_processing_error('Valid response data could not be found. Please try again.')
+      return false
+    }
 
     transaction.payment_token = token_res.opaqueData.dataValue
 
     var transaction_res = await this._submit_authnet_transaction(transaction)
 
-    if(transaction_res && transaction_res.ticket_key)
-      this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
-
-    if(transaction.cc_retain && transaction.cc_retain == 'y'){
-      if(!transaction.spreedly_environment_key)
-        transaction.spreedly_environment_key = this._get_spreedly_env_key()
-      this._save_card(card, transaction, 'spreedly')
-    }
-
     return transaction_res
 
   }
+
+  this._is_valid_authnet_response = function(response){
+    if(!response.messages || !response.messages.resultCode){
+      this._add_processing_error('An unknown error has occurred. Please try again')
+      return false
+    }
+
+    if(response.messages.resultCode === 'Error'){
+      for (var i = 0; i < response.messages.message.length; i++)
+        this._add_processing_error(response.messages.message[i].text)
+      return false
+    }
+
+    return true
+  }
+
 
   this._get_authnet_token = async function(card, transaction, auth, cb){
 
@@ -482,6 +495,10 @@ var hmt_client_processor = function(settings){
       cardData.month = card.payment_method.credit_card.month;
       cardData.year = card.payment_method.credit_card.year;
       cardData.cardCode = card.payment_method.credit_card.verification_value;
+      cardData.fullName = card.payment_method.credit_card.full_name;
+
+    if(card.payment_method.credit_card.zip)
+      cardData.zip = card.payment_method.credit_card.zip
 
     var secureData = {};
       secureData.authData = authData;

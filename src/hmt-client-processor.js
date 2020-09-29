@@ -1,5 +1,6 @@
 
 import Qs from 'qs';
+import { Accept as HmtMobileAccept } from '../../../src/components/Root';
 
 var hmt_client_processor = function(settings){
 
@@ -504,11 +505,19 @@ var hmt_client_processor = function(settings){
       secureData.authData = authData;
       secureData.cardData = cardData;
 
-    return new Promise((resolve, reject) => {
-      Accept.dispatchData(secureData, function(res){
-        resolve(res)
+    if (this.isHmtMobile) {
+      return new Promise((resolve, reject) => {
+        HmtMobileAccept.dispatchData(secureData, function(res){
+          resolve(res)
+        });
       });
-    })
+    } else {
+      return new Promise((resolve, reject) => {
+        Accept.dispatchData(secureData, function(res){
+          resolve(res)
+        });
+      });
+    }
 
 
   }

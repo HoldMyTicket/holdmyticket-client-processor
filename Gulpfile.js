@@ -42,6 +42,12 @@ function compileJs() {
           commonjs2: 'qs',
           amd: 'qs',
           root: 'Qs'
+        },
+        '../../../src/components/Root': {
+          commonjs: '../../../src/components/Root',
+          commonjs2: '../../../src/components/Root',
+          amd: '../../../src/components/Root',
+          root: 'Accept'
         }
       },
       output: {

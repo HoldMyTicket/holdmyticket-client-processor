@@ -438,6 +438,8 @@ var hmt_client_processor = function(settings){
 
 
     var token_res = await this._get_authnet_token(card, transaction, authentication_key_res)
+    console.log('token res', token_res)
+
     if(!this._is_valid_authnet_response(token_res))
       return false
 
@@ -455,6 +457,7 @@ var hmt_client_processor = function(settings){
   }
 
   this._is_valid_authnet_response = function(response){
+
     if(!response.messages || !response.messages.resultCode){
       this._add_processing_error('An unknown error has occurred. Please try again')
       return false
@@ -486,31 +489,60 @@ var hmt_client_processor = function(settings){
       return false
     }
 
+    //Careful here - the ORDER of the variables is important to auth.net
     var authData = {};
+      authData.name = auth.auth_user;
       authData.clientKey = auth.auth_key;
-      authData.apiLoginID = auth.auth_user;
-
+      
     var cardData = {};
       cardData.cardNumber = card.payment_method.credit_card.number.replace(/\s/g, '');
-      cardData.month = card.payment_method.credit_card.month;
-      cardData.year = card.payment_method.credit_card.year;
+      cardData.expirationDate = this._get_authnet_expiration(card.payment_method.credit_card) 
       cardData.cardCode = card.payment_method.credit_card.verification_value;
-      cardData.fullName = card.payment_method.credit_card.full_name;
 
     if(card.payment_method.credit_card.zip)
       cardData.zip = card.payment_method.credit_card.zip
 
-    var secureData = {};
-      secureData.authData = authData;
-      secureData.cardData = cardData;
-
-    return new Promise((resolve, reject) => {
-      Accept.dispatchData(secureData, function(res){
-        resolve(res)
-      });
-    })
+    cardData.fullName = card.payment_method.credit_card.full_name;
 
 
+    var anet_url = 'https://apitest.authorize.net'+'/xml/v1/request.api';
+
+    var post_data = {
+      'securePaymentContainerRequest': {
+        'merchantAuthentication' : authData,
+        'data': {
+          'type': 'TOKEN',
+          'id': 'hmt_'+this.random_id(),          
+          'token': cardData
+        }
+      }
+    }
+
+    var token_res = await this._request({
+      url: anet_url,
+      type: 'POST',
+      data: post_data,
+      json: true,
+      form_encoded: false,
+      withCredentials: false,      
+      remote_url: true
+    });
+
+    return token_res;
+
+  }
+
+  this._get_authnet_expiration = function(card){
+    return (card.month.length == 1 ? '0' : '')+card.month+(card.year.length == 2 ? '20' : '')+card.year
+  }
+
+  this.random_id = function(){
+    var res = ''; 
+    var arr = '1234567890'
+    for (var i = 16; i > 0; i--) { 
+        res += arr[Math.floor(Math.random() * arr.length)]; 
+    } 
+    return res; 
   }
 
 
@@ -931,6 +963,9 @@ var hmt_client_processor = function(settings){
         if(typeof data == 'string')
           data += '&can_handle_fullsteam=true'
       }
+
+      if(opts.remote_url)
+        url = opts.url
 
       if(opts.json)
         data = JSON.stringify(data)

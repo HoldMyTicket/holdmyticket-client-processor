@@ -36,6 +36,10 @@ var hmt_client_processor = function(settings){
     return 'shop/processors/get_authentication_key'
   }
 
+  this.authnet_token_url = function() {
+    return 'https://' + (this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? 'apitest.authorize.net' : 'api2.authorize.net') + '/xml/v1/request.api';
+  }
+
   /*
   PUBLIC FUNCTIONS
   */
@@ -504,7 +508,7 @@ var hmt_client_processor = function(settings){
 
     cardData.fullName = card.payment_method.credit_card.full_name;
 
-    var anet_url = 'https://apitest.authorize.net'+'/xml/v1/request.api';
+    var anet_url = this.authnet_token_url();
 
     var post_data = {
       'securePaymentContainerRequest': {

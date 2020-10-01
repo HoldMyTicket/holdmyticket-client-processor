@@ -247,7 +247,7 @@ var hmt_client_processor = function(settings){
       params.processor_hash = processor_hash;
 
     var token_res = await this._request({
-      url: this.url(this.auth_key_url(), true)+(params ? '?'+(new URLSearchParams(params)).toString() : ''),
+      url: this.url(this.auth_key_url(), true)+(params ? ('?' + Qs.stringify(params)) : ''),
       withCredentials: true
     })
 

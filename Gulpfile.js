@@ -81,7 +81,7 @@ function defaultTask(done) {
 
     if(typeFlag == 'publish')
       setTimeout(function() {
-        console.log('\x1b[32m%s\x1b[0m', 'If not errors occured then you can now run the command "yarn publish" to publish a new version to the npm registry.');
+        console.log('\x1b[32m%s\x1b[0m', 'If no errors occured then you can now run the command "yarn publish" to publish a new version to the npm registry.');
       }, 2000);
     
   } else {

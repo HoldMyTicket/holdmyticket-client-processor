@@ -241,9 +241,7 @@ var hmt_client_processor = function(settings){
 
   this._get_auth_key = async function(transaction){
     //hit HMT servers to get a public key used for obtaining card token
-    console.log('transaction', transaction)
     var processor_hash = transaction && transaction.processor_hash ? transaction.processor_hash : ''
-    console.log('processor_hash', processor_hash)
     var params = {}
     if(this.captcha_token)
       params.captcha_token = this.captcha_token;
@@ -417,8 +415,6 @@ var hmt_client_processor = function(settings){
 
   /* AUTHNET */
   this._submit_authnet = async function(card, transaction, cb){
-    console.log('card', card)
-    console.log('transaction', transaction)
 
     //This data
     transaction.card_data = {
@@ -442,7 +438,6 @@ var hmt_client_processor = function(settings){
 
 
     var token_res = await this._get_authnet_token(card, transaction, authentication_key_res)
-    console.log('token res', token_res)
 
     if(!this._is_valid_authnet_response(token_res))
       return false

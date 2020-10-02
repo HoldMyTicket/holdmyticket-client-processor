@@ -969,6 +969,8 @@ var hmt_client_processor = function(settings){
 
       if(opts.remote_url)
         url = opts.url
+      else
+        headers['processor-compat-ver'] = '1'
 
       if(opts.json)
         data = JSON.stringify(data)

@@ -964,6 +964,8 @@ var hmt_client_processor = function(settings){
 
       if(opts.remote_url)
         url = opts.url
+      else
+        headers['processor-compat-ver'] = '1'
 
       if(opts.json)
         data = JSON.stringify(data)
@@ -1226,6 +1228,10 @@ var hmt_client_processor = function(settings){
     // removing all phone special chars. Only allow numbers
     if (transaction.phone)
       transaction.phone = this._format_phone_number(transaction.phone);
+
+    //we need to make sure old versions of lib work, so API sends new prop
+    if(transaction.new_processor_method)
+      transaction.processor_method = transaction.new_processor_method;
 
     return transaction
 

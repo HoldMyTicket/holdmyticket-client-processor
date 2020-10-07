@@ -1010,7 +1010,7 @@ var hmt_client_processor = function(settings){
     try {
       res = JSON.parse(xhr.responseText)
     } catch(error) {
-      console.log('could not parse the response to json')
+      console.error('could not parse the response to json')
     }
 
     // attempt to set statusText
@@ -1041,8 +1041,8 @@ var hmt_client_processor = function(settings){
     try {
       res = JSON.parse(xhr.responseText)
     } catch(error) {
-      console.log('xhr error', error)
-      console.log('could not parse the response to json', xhr)
+      console.error('xhr error', error)
+      console.error('could not parse the response to json', xhr)
     }
 
     if(!res.status && res.status !== 'error')

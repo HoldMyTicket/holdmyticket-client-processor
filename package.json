@@ -28,6 +28,7 @@
     "babel-cli": "^6.26.0",
     "babel-jest": "^24.9.0",
     "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-plugin-transform-remove-console": "^6.9.4",
     "babel-polyfill": "^6.26.0",
     "child_process": "^1.0.2",
     "gulp": "^4.0.0",

@@ -23,6 +23,7 @@ function compileJs() {
       "presets": ["@babel/preset-env"],
 			"plugins": [
         "@babel/transform-runtime",
+        ["transform-remove-console", { "exclude": [ "error", "warn"] }]
         // "@babel/plugin-proposal-class-properties",
         // "@babel/plugin-proposal-export-default-from",
         // "react-hot-loader/babel"

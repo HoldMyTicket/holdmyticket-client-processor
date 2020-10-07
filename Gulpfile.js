@@ -14,6 +14,12 @@ const validTypes = ['publish','dev'];
 function compileJs() {
   
   util.log(util.colors.green('Compiling to dist file.'));
+
+  const babelPlugins = ["@babel/transform-runtime"];
+
+  if (typeFlag == 'publish') {
+    babelPlugins.push(["transform-remove-console", { "exclude": [ "error", "warn"] }]);
+  }
   
   return gulp.src(['node_modules/babel-polyfill','src/*.js'], { since: gulp.lastRun(compileJs) })
       
@@ -21,13 +27,7 @@ function compileJs() {
     
     .pipe(babel({
       "presets": ["@babel/preset-env"],
-			"plugins": [
-        "@babel/transform-runtime",
-        ["transform-remove-console", { "exclude": [ "error", "warn"] }]
-        // "@babel/plugin-proposal-class-properties",
-        // "@babel/plugin-proposal-export-default-from",
-        // "react-hot-loader/babel"
-      ]
+			"plugins": babelPlugins
 		}))
     
     .pipe(gulp.dest('./build'))

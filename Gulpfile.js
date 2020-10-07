@@ -13,7 +13,7 @@ const validTypes = ['publish','dev'];
 
 function compileJs() {
   
-  util.log(util.colors.green('Compiling to distr file.'));
+  util.log(util.colors.green('Compiling to dist file.'));
   
   return gulp.src(['node_modules/babel-polyfill','src/*.js'], { since: gulp.lastRun(compileJs) })
       

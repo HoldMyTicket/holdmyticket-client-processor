@@ -314,6 +314,8 @@ var hmt_client_processor = function(settings){
     // handle any processing errors here
     if(!res || !res.isSuccessful){
 
+      console.log('res', res)
+
       this._add_internal_error('Fullsteam, Could not get token')
 
       var msg = ''
@@ -492,10 +494,10 @@ var hmt_client_processor = function(settings){
     var authData = {};
       authData.name = auth.auth_user;
       authData.clientKey = auth.auth_key;
-      
+
     var cardData = {};
       cardData.cardNumber = card.payment_method.credit_card.number.replace(/\s/g, '');
-      cardData.expirationDate = this._get_authnet_expiration(card.payment_method.credit_card) 
+      cardData.expirationDate = this._get_authnet_expiration(card.payment_method.credit_card)
       cardData.cardCode = card.payment_method.credit_card.verification_value;
 
     if(card.payment_method.credit_card.zip)
@@ -510,7 +512,7 @@ var hmt_client_processor = function(settings){
         'merchantAuthentication' : authData,
         'data': {
           'type': 'TOKEN',
-          'id': 'hmt_'+this.random_id(),          
+          'id': 'hmt_'+this.random_id(),
           'token': cardData
         }
       }
@@ -522,7 +524,7 @@ var hmt_client_processor = function(settings){
       data: post_data,
       json: true,
       form_encoded: false,
-      withCredentials: false,      
+      withCredentials: false,
       remote_url: true
     });
 
@@ -535,12 +537,12 @@ var hmt_client_processor = function(settings){
   }
 
   this.random_id = function(){
-    var res = ''; 
+    var res = '';
     var arr = '1234567890'
-    for (var i = 16; i > 0; i--) { 
-        res += arr[Math.floor(Math.random() * arr.length)]; 
-    } 
-    return res; 
+    for (var i = 16; i > 0; i--) {
+        res += arr[Math.floor(Math.random() * arr.length)];
+    }
+    return res;
   }
 
 
@@ -1178,7 +1180,7 @@ var hmt_client_processor = function(settings){
     var str = JSON.stringify(data)
 
     // mask cc data
-    str = str.replace(/\b(?:\d{4}[ -]?){3}(?=\d{4}\b)/gm, `**** **** **** `)
+    str = str.replace(/\b(?:\d{3,4}[ -]?){3}(?=\d{2,4}\b))/gm, `**** **** **** `)
 
     return str
 

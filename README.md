@@ -11,3 +11,5 @@ to publish new version
 ```
 yarn publish
 ```
+
+enter your account information for npmjs.com

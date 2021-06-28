@@ -314,8 +314,6 @@ var hmt_client_processor = function(settings){
     // handle any processing errors here
     if(!res || !res.isSuccessful){
 
-      console.log('res', res)
-
       this._add_internal_error('Fullsteam, Could not get token')
 
       var msg = ''
@@ -1180,7 +1178,7 @@ var hmt_client_processor = function(settings){
     var str = JSON.stringify(data)
 
     // mask cc data
-    str = str.replace(/\b(?:\d{3,4}[ -]?){3}(?=\d{2,4}\b))/gm, `**** **** **** `)
+    str = str.replace(/\b(?:\d{3,4}[ -]?){3}(?=\d{2,4}\b)/gm, `**** **** **** `)
 
     return str
 

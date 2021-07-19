@@ -336,6 +336,8 @@ var hmt_client_processor = function(settings){
           msg = "CVV Error: "+CVVResponseDescription; //takes precedence
 
         } else {
+          //TODO check for AVS Errors, and send nicer error to buyers
+
 
           if(this.errors_processing.length > 0 && issuerResponseCode == '00') // we already have processing error, and there isn't a issuer error, so return...
             return false

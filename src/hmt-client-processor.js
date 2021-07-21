@@ -2043,7 +2043,7 @@ var hmt_client_processor = function (settings) {
 
   let AVS_response_codes = [{
       code: "A",
-      response: "Address matches, zip does not match"
+      response: "Zip code does not match billing records"
     },
     {
       code: "B",
@@ -2087,7 +2087,7 @@ var hmt_client_processor = function (settings) {
     },
     {
       code: "N",
-      response: "No: Address and zip code do not match"
+      response: "Address and zip code do not match billing records"
     },
     {
       code: "P",
@@ -2095,7 +2095,7 @@ var hmt_client_processor = function (settings) {
     },
     {
       code: "R",
-      response: "Retry: System unavailable or timed out"
+      response: "System unavailable or timed out please resubmit your purchase"
     },
     {
       code: "S",
@@ -2107,7 +2107,7 @@ var hmt_client_processor = function (settings) {
     },
     {
       code: "U",
-      response: "Unavailable: Address information not verified for domestic transaction",
+      response: "Address information is not available for the customer's credit card",
     },
     {
       code: "W",
@@ -2115,15 +2115,15 @@ var hmt_client_processor = function (settings) {
     },
     {
       code: "X",
-      response: "Exact: Address and nine-digit zip code match"
+      response: ""
     },
     {
       code: "Y",
-      response: "Yes: Address and five-digit zip code match"
+      response: ""
     },
     {
       code: "Z",
-      response: "Zip: Five-digit zip code matches, address does not match",
+      response: "Address does not match billing information",
     },
     {
       code: "0",

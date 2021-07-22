@@ -254,13 +254,13 @@ var hmt_client_processor = function (settings) {
       !card.payment_method.credit_card.full_name ||
       !card.payment_method.credit_card.verification_value
     ) {
-      this._add_processing_error('Missing required card inputs')
-      return false
+      this._add_processing_error("Missing required card inputs");
+      return false;
     }
 
     var data = {
       clearTextCardData: {
-        cardNumber: card.payment_method.credit_card.number.replace(/\s/g, ''),
+        cardNumber: card.payment_method.credit_card.number.replace(/\s/g, ""),
         cvv: card.payment_method.credit_card.verification_value,
         expirationMonth: card.payment_method.credit_card.month,
         expirationYear: card.payment_method.credit_card.year,
@@ -272,80 +272,83 @@ var hmt_client_processor = function (settings) {
           address2: transaction.address2 || null,
           city: transaction.city || null,
           state: transaction.state || null,
-          zip: transaction.zip || (this.app_type == 'box' ? '00000' : null),
+          zip: transaction.zip || (this.app_type == "box" ? "00000" : null),
           country: this._get_fullsteam_contry_code(transaction),
           phone: transaction.phone || null,
           email: transaction.email1 || null,
         },
       },
-      cardEntryContext: this.app_type == 'box' ? 7 : 5,
+      cardEntryContext: this.app_type == "box" ? 7 : 5,
       performAccountVerification: true,
-    }
+    };
 
-    if (transaction.country_id && transaction.country_id != '2') delete data.clearTextCardData.billingInformation.state
+    if (transaction.country_id && transaction.country_id != "2")
+      delete data.clearTextCardData.billingInformation.state;
 
     var res = await this._request({
-      url: this.fullsteam_url() + 'api/token/card/clearText/create',
-      type: 'POST',
+      url: this.fullsteam_url() + "api/token/card/clearText/create",
+      type: "POST",
       cors: true,
       crossdomain: true,
       data: data,
       json: true,
       withCredentials: false,
       auth_key: auth_key,
-    })
+    });
 
     // handle any processing errors here
     if (!res || !res.isSuccessful) {
-      this._add_internal_error('Fullsteam, Could not get token')
+      this._add_internal_error("Fullsteam, Could not get token");
 
-      var msg = ''
-
-      if (res && res.responseDetails) {
-        for (var key in res.responseDetails) this._add_processing_error(res.responseDetails[key].message)
-      }
+      var msg = "";
 
       if (res && res.issuerResponseDetails) {
-        var issuerResponseCode = res.issuerResponseDetails.issuerResponseCode || 0
-        var issuerResponseDescription = res.issuerResponseDetails.issuerResponseDescription || ''
-        var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode &&
-          ['M', 'P'].indexOf(res.issuerResponseDetails.cvvResponseCode) == -1
-            ? res.issuerResponseDetails.cvvResponseCode
-            : 0
-        var CVVResponseDescription =
-          CVVResponseCode && res.issuerResponseDetails.cvvResponseDescription
-            ? res.issuerResponseDetails.cvvResponseDescription
-            : ''
-        //we only look for cvv not M (match), P (not processed) cvv
 
-        if (CVVResponseDescription) {
-          msg = 'CVV Error: ' + CVVResponseDescription //takes precedence
+        var issuerResponseCode = res.issuerResponseDetails.issuerResponseCode || 0;
+        var issuerResponseDescription = res.issuerResponseDetails.issuerResponseDescription || "";
+        var avsResponseCode = res.issuerResponseDetails.avsResponseCode || "";
+        var avsResponseDescription = res.issuerResponseDetails.avsResponseDescription || "";
+        var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode || "";
+        var CVVResponseDescription = res.issuerResponseDetails.cvvResponseDescription || "";
+        var responseError = res.responseCode || "";  
+        
+        if(responseError){
+          if(this.check_fullsteam_codes(responseCodes, responseError, msg) === undefined){
+            msg += "<br/>SERVER RESPONSE: <b>An error has occured, please check all information and resubmit.</b>"
+          }else
+          msg = msg + "<br/>SERVER RESPONSE: " + this.check_fullsteam_codes(responseCodes, responseError, msg)
+        }
+        if(issuerResponseCode){
+          msg = msg + "<br/>ISSUER RESPONSE: " + this.check_fullsteam_codes(error_issuer_response_codes, issuerResponseCode, msg)
+        }
+        if (avsResponseCode) {
+          msg = msg + "<br/>PROCESSING ERROR: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg) + ". " + "Please check your information and resubmit"
+        }
+        if (CVVResponseCode) {
+          msg = msg + "<br/>CVC ERROR: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg) + ", " + "Please check your card's security number and try again. "
         } else {
-          //TODO check for AVS Errors, and send nicer error to buyers
-
-          if (this.errors_processing.length > 0 && issuerResponseCode == '00')
+          if (this.errors_processing.length > 0 && issuerResponseCode == "00")
             // we already have processing error, and there isn't a issuer error, so return...
-            return false
+            return false;
 
-          if (msg == '' && issuerResponseDescription && issuerResponseCode != '00')
-            msg = 'Error: ' + issuerResponseDescription
+          if (msg == "" && (!issuerResponseCode || issuerResponseCode == "00"))
+            msg = "CPE2: Missing error code";
 
-          if (msg == '' && (!issuerResponseCode || issuerResponseCode == '00')) msg = 'CPE2: Missing error code'
-
-          if (msg == '') msg = 'CPE3: Unknown issuer error'
+          if (msg == "") msg = "CPE3: Unknown issuer error";
         }
       }
 
-      if (msg == '' && this.errors_processing.length == 0)
-        msg = 'Unable to charge card. Please check Adblocker / Firewall settings and try again.' // CPE4 ERROR
+      if (msg == "" && this.errors_processing.length == 0)
+        msg =
+        "Unable to charge card. Please check Adblocker / Firewall settings and try again."; // CPE4 ERROR
 
-      this._add_processing_error(msg)
+      this._add_processing_error(msg);
 
-      return false
+      return false;
     }
 
-    return res
-  }
+    return res;
+  };
 
   this._submit_fullsteam_transaction = async function (transaction, cb) {
     if (transaction.payments)

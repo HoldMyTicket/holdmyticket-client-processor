@@ -557,8 +557,7 @@ var hmt_client_processor = function (settings) {
         var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode || "";
         var CVVResponseDescription = res.issuerResponseDetails.cvvResponseDescription || "";
         var responseError = res.responseCode || "";  
-
-        console.log(res);
+        
         if(responseError){
           if(this.check_fullsteam_codes(responseCodes, responseError, msg) === undefined){
             msg += "<br/>SERVER RESPONSE: <b>An error has occured, please check all information and resubmit.</b>"

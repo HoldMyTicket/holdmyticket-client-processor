@@ -577,15 +577,5 @@ describe('fullsteam_url', () => {
   
   });
 
-
-  test('Tests AVS error code responses', async () => {
-    
-    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
-    const avsCodesList = new avscodes
-    const fullsteam_AVS_code_response = await AVS_CODE.forEach(code => cc_processor.check_fullsteam_codes(code)) 
-
-    console.log(avsCodesList.responseCodes)
-    
-  });
   
 });

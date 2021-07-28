@@ -1,4 +1,5 @@
 import hmt_client_processor from '../hmt-client-processor';
+import avscodes from "../avscodes"
 import {
   successful_transaction_response,
   successful_create_charge_worker_response,
@@ -6,7 +7,8 @@ import {
   fullsteam_transaction_data,
   fullsteam_payment_token,
   fullsteam_authentication_key_response_success,
-  fullsteam_token_response_success
+  fullsteam_token_response_success,
+  AVS_CODE
 } from '../test/test-data';
 
 const hmt_client_processor_settings = {
@@ -16,7 +18,6 @@ const hmt_client_processor_settings = {
 }
 
 let fresh_card_data;
-
 let fresh_fullsteam_transaction_data;
 let fresh_fullsteam_authentication_key_response_success;
 let fresh_fullsteam_token_response_success;
@@ -27,6 +28,7 @@ describe('submit_transaction', () => {
     // that hasn't been already mutated from a previous test
     fresh_fullsteam_transaction_data = JSON.parse(JSON.stringify(fullsteam_transaction_data));
     fresh_card_data = JSON.parse(JSON.stringify(card_data));
+
   });
 
   test('submits the transaction for fullsteam if transaction processor is fullsteam', (done) => {
@@ -130,18 +132,18 @@ describe('_submit_fullsteam', () => {
   test('generates token and submits the transaction if payment token does NOT exist', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
-    jest.spyOn(cc_processor, '_get_fullsteam_auth_key');
+    jest.spyOn(cc_processor, '_get_auth_key');
     jest.spyOn(cc_processor, '_get_fullsteam_token');
     jest.spyOn(cc_processor, '_submit_fullsteam_transaction');
     jest.spyOn(cc_processor, '_save_card_to_webuser');
-    cc_processor._get_fullsteam_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
+    cc_processor._get_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
     cc_processor._get_fullsteam_token.mockImplementationOnce((card, transaction, auth_key) => Promise.resolve(fresh_fullsteam_token_response_success));
     cc_processor._submit_fullsteam_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
     cc_processor._save_card_to_webuser.mockImplementationOnce((args) => Promise.resolve(undefined));
     
     const cc_processor_response = await cc_processor._submit_fullsteam(fresh_card_data, fresh_fullsteam_transaction_data);
     
-    expect(cc_processor._get_fullsteam_auth_key).toHaveBeenCalledTimes(1);
+    expect(cc_processor._get_auth_key).toHaveBeenCalledTimes(1);
 
     expect(cc_processor._get_fullsteam_token).toHaveBeenCalledTimes(1);
     expect(cc_processor._get_fullsteam_token).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
@@ -150,7 +152,7 @@ describe('_submit_fullsteam', () => {
     expect(cc_processor._submit_fullsteam_transaction).toHaveBeenCalledWith(fresh_fullsteam_transaction_data);
     expect(cc_processor_response).toBe(successful_transaction_response);
     
-    cc_processor._get_fullsteam_auth_key.mockRestore();
+    cc_processor._get_auth_key.mockRestore();
     cc_processor._get_fullsteam_token.mockRestore();
     cc_processor._submit_fullsteam_transaction.mockRestore();
   });
@@ -159,13 +161,13 @@ describe('_submit_fullsteam', () => {
     const client_processor_settings_with_spreedly_env_key = Object.assign({}, hmt_client_processor, { spreedly_environment_key: '12345' });
     const cc_processor = new hmt_client_processor(client_processor_settings_with_spreedly_env_key);
 
-    jest.spyOn(cc_processor, '_get_fullsteam_auth_key');
+    jest.spyOn(cc_processor, '_get_auth_key');
     jest.spyOn(cc_processor, '_get_fullsteam_token');
     jest.spyOn(cc_processor, '_submit_fullsteam_transaction');
     jest.spyOn(cc_processor, '_save_card_to_webuser');
     jest.spyOn(cc_processor, '_get_spreedly_env_key');
     jest.spyOn(cc_processor, '_save_card');
-    cc_processor._get_fullsteam_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
+    cc_processor._get_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
     cc_processor._get_fullsteam_token.mockImplementationOnce((card, transaction, auth_key) => Promise.resolve(fresh_fullsteam_token_response_success));
     cc_processor._submit_fullsteam_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
     cc_processor._save_card_to_webuser.mockImplementationOnce((args) => Promise.resolve(undefined));
@@ -181,7 +183,7 @@ describe('_submit_fullsteam', () => {
     expect(cc_processor._save_card).toHaveBeenCalledTimes(1);
     expect(cc_processor._save_card).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, 'spreedly');
     
-    cc_processor._get_fullsteam_auth_key.mockRestore();
+    cc_processor._get_auth_key.mockRestore();
     cc_processor._get_fullsteam_token.mockRestore();
     cc_processor._submit_fullsteam_transaction.mockRestore();
     cc_processor._save_card_to_webuser.mockRestore();
@@ -190,7 +192,7 @@ describe('_submit_fullsteam', () => {
   })
 })
 
-describe('_get_fullsteam_auth_key', () => {
+describe('_get_auth_key', () => {
   beforeEach(() => {
     // resetting the data variables before each test to ensure we are using fresh test data
     // that hasn't been already mutated from a previous test
@@ -203,11 +205,12 @@ describe('_get_fullsteam_auth_key', () => {
     jest.spyOn(cc_processor, '_request');
     cc_processor._request.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
 
-    const fullsteam_auth_key_response = await cc_processor._get_fullsteam_auth_key();
+    const fullsteam_auth_key_response = await cc_processor._get_auth_key();
 
     expect(cc_processor._request).toHaveBeenCalledTimes(1);
     expect(cc_processor._request).toHaveBeenCalledWith({
-      url: 'http://holdmyticket.loc/api/shop/processors/get_authentication_key'
+      url: 'http://holdmyticket.loc/api/shop/processors/get_authentication_key?',
+            "withCredentials": true
     });
 
     expect(fullsteam_auth_key_response).toBe(fresh_fullsteam_authentication_key_response_success);
@@ -571,5 +574,18 @@ describe('fullsteam_url', () => {
       if (environment === 'production') expect(fullsteam_url_response).toBe('https://api.fullsteampay.net/');
       else expect(fullsteam_url_response).toBe('https://api-ext.fullsteampay.net/');
     });
+  
   });
+
+
+  test('Tests AVS error code responses', async () => {
+    
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+    const avsCodesList = new avscodes
+    const fullsteam_AVS_code_response = await AVS_CODE.forEach(code => cc_processor.check_fullsteam_codes(code)) 
+
+    console.log(avsCodesList.responseCodes)
+    
+  });
+  
 });

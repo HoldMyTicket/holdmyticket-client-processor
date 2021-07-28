@@ -13,6 +13,8 @@ export const successful_create_charge_worker_response = {
   "status":"ok"
 }
 
+
+
 export const successful_check_charge_worker_response = {
   "request_number":71,
   "worker":{
@@ -63,6 +65,7 @@ export const card_data = {
     }
   }
 };
+
 
 export const incorrect_transaction_survey_form_data = 'f_name=Joseph&l_name=Perez&email1=joseph.perez%40holdmyticket.com&email2=joseph.perez%40holdmyticket.com&newsletter=on&phone=55555555555&survey%5B348538%5D%5B1205611%5D%5B0%5D%5B%5D%5B0%5D=Male&survey%5B348538%5D%5B1205611%5D%5B0%5D%5B%5D%5B1%5D=Female&survey%5B348538%5D%5B1205612%5D%5B0%5D=30&survey%5B348538%5D%5B1205613%5D%5B0%5D=Television&survey%5B348538%5D%5B1205614%5D%5B0%5D=test%20value&survey%5B348538%5D%5B1205615%5D%5B0%5D=3&survey%5B348538%5D%5B1205616%5D%5B0%5D=Live%20Theater&survey%5B348538%5D%5B1205617%5D%5B0%5D=another%20test%20value&address1=test%20address%20123&address2=&city=Albuquerque&state_international=&state=NM&zip=87121&country_id=2&subscription_plan=&processor_hash=b81d1cea6ee1474dc8f6ff3cf5068f48&processor_method=spreedly&spreedly_environment_key=C1ZXiUWYZpg6yGn7XkRAwWOJLjp&cb_data%5Bticket_index%5D=0&payment_token=KGGyKKbTDryh2NgPj35xXqwLe1D';
 export const correct_transaction_survey_form_data = 'f_name=Joseph&l_name=Perez&email1=joseph.perez%40holdmyticket.com&email2=joseph.perez%40holdmyticket.com&newsletter=on&phone=5555555555&sms=y&survey%5B348538%5D%5B1205611%5D%5B0%5D%5B%5D=Male&survey%5B348538%5D%5B1205611%5D%5B0%5D%5B%5D=Female&survey%5B348538%5D%5B1205612%5D%5B0%5D=30&survey%5B348538%5D%5B1205613%5D%5B0%5D=Television&survey%5B348538%5D%5B1205614%5D%5B0%5D=test%20value&survey%5B348538%5D%5B1205615%5D%5B0%5D=3&survey%5B348538%5D%5B1205616%5D%5B0%5D=Live%20Theater&survey%5B348538%5D%5B1205617%5D%5B0%5D=another%20test%20value&address1=test%20address%20123&address2=&city=Albuquerque&state_international=&state=NM&zip=87121&country_id=2&subscription_plan=&processor_hash=b81d1cea6ee1474dc8f6ff3cf5068f48&processor_method=spreedly&spreedly_environment_key=C1ZXiUWYZpg6yGn7XkRAwWOJLjp&cb_data%5Bticket_index%5D=0&payment_token=Y51rG0kAdBvO9HyEnCF0x1aYTQM';
@@ -216,6 +219,9 @@ export const fullsteam_transaction_data = {
   zip: '87121'
 }
 
+export const AVS_CODE = [87106];
+
+
 export const fullsteam_authentication_key_response_success = {
   "authenticationKey":"d1236fd7-39a3-4022-9325-e2f93eff74e8",
   "status":"ok",
@@ -250,3 +256,4 @@ export const fullsteam_token_response_success = {
   "responseDetails": [],
   "durationInMilliseconds": 932
 }
+

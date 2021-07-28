@@ -21,7 +21,7 @@ function compileJs() {
     babelPlugins.push(["transform-remove-console", { "exclude": [ "error", "warn"] }]);
   }
 
-  return gulp.src(['node_modules/babel-polyfill','src/*.js'], { since: gulp.lastRun(compileJs) })
+  return gulp.src(['node_modules/babel-polyfill','src/*.js', 'src/avscodes.js'], { since: gulp.lastRun(compileJs) })
 
     .pipe(concat('hmtclientprocessor.min.js'))
 
@@ -43,7 +43,7 @@ function compileJs() {
           commonjs2: 'qs',
           amd: 'qs',
           root: 'Qs'
-        }
+        } 
       },
       output: {
         path: path.resolve(__dirname, 'dist'),

@@ -8,11 +8,31 @@
   "jest": {
     "verbose": true,
     "collectCoverageFrom": [
-      "src/hmt-client-processor.js"
+      "src/*.js" 
     ],
-    "coveragePathIgnorePatterns": [
-      "/node_modules/"
-    ]
+    "roots": [
+      "<rootDir>",
+      "node_modules"
+    ],
+    "modulePaths": [
+      "<rootDir>",
+      "node_modules"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "src"
+    ],
+    "moduleFileExtensions": [
+      "web.js",
+      "js",
+      "json",
+      "web.jsx",
+      "jsx",
+      "node",
+      "mjs",
+      "ts"
+    ],
+    "testEnvironment": "jsdom"
   },
   "scripts": {
     "test": "jest --coverage",
@@ -35,15 +55,16 @@
     "gulp-babel": "^8.0.0-beta.2",
     "gulp-concat": "^2.6.1",
     "gulp-util": "^3.0.8",
-    "jest": "^24.9.0",
+    "jest": "^27.0.6",
     "webpack-stream": "^5.2.1"
   },
-  "dependencies": {},
+  "dependencies": {
+    "qs": "^6.10.1"
+  },
   "peerDependencies": {
     "qs": "^6.9.1"
   },
-  "prettier":
-  {
+  "prettier": {
     "trailingComma": "es5",
     "tabWidth": 2,
     "semi": false,

@@ -111,16 +111,16 @@ describe('_save_card', () => {
   test('calls _save_card_to_webuser for fullsteam with correct data', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
-    jest.spyOn(cc_processor, '_get_fullsteam_auth_key');
+    jest.spyOn(cc_processor, '_get_auth_key');
     jest.spyOn(cc_processor, '_get_fullsteam_token');
     jest.spyOn(cc_processor, '_save_card_to_webuser');
-    cc_processor._get_fullsteam_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
+    cc_processor._get_auth_key.mockImplementationOnce(() => Promise.resolve(fresh_fullsteam_authentication_key_response_success));
     cc_processor._get_fullsteam_token.mockImplementationOnce((card, transaction, auth_key) => Promise.resolve(fresh_fullsteam_token_response_success));
     cc_processor._save_card_to_webuser.mockImplementationOnce(args => undefined);
 
     await cc_processor._save_card(fresh_card_data, fresh_fullsteam_transaction_data, 'fullsteam', fresh_successful_transaction_response.ticket_key);
 
-    expect(cc_processor._get_fullsteam_auth_key).toHaveBeenCalledTimes(1);
+    expect(cc_processor._get_auth_key).toHaveBeenCalledTimes(1);
 
     expect(cc_processor._get_fullsteam_token).toHaveBeenCalledTimes(1);
     expect(cc_processor._get_fullsteam_token).toHaveBeenCalledWith(fresh_card_data, fresh_fullsteam_transaction_data, fresh_fullsteam_authentication_key_response_success.authenticationKey);
@@ -133,7 +133,7 @@ describe('_save_card', () => {
       token: fresh_fullsteam_token_response_success.token
     });
 
-    cc_processor._get_fullsteam_auth_key.mockRestore();
+    cc_processor._get_auth_key.mockRestore();
     cc_processor._get_fullsteam_token.mockRestore();
     cc_processor._save_card_to_webuser.mockRestore();
   });

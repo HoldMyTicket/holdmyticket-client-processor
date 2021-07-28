@@ -1,5 +1,4 @@
 import hmt_client_processor from '../hmt-client-processor';
-import avscodes from "../avscodes"
 import {
   successful_transaction_response,
   successful_create_charge_worker_response,

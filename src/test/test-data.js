@@ -251,5 +251,5 @@ export const fullsteam_token_response_success = {
   "durationInMilliseconds": 932
 }
 
-export const CVV_CODE = ["02", "03", "04"]
+export const CVV_CODE = ["M", "N", "P"]
 

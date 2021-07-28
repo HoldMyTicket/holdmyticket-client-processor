@@ -1756,15 +1756,16 @@ let CVV_response_codes = [{
   },
 ];
 
-this.check_fullsteam_codes = function (errorCodes, flagged, msg) {
+this.check_fullsteam_codes = function (errorCodes, flagged) {
   for (let i = 0; i < errorCodes.length; i++) {
+    if(errorCodes[i].response === undefined){
+      return 'An unknown error has occured'
+    }
     if (errorCodes[i].code === flagged) {
-      if(errorCodes[i].response === undefined){
-        return 'An unknown error has occured'
-      }
       return `<b>${errorCodes[i].response}</b>`;
     }
   }
+  return 'Unknown error code has been submitted from the external server'
 };
 
 }

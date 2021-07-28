@@ -6,8 +6,18 @@ import {
   fullsteam_transaction_data,
   fullsteam_payment_token,
   fullsteam_authentication_key_response_success,
-  fullsteam_token_response_success
+  fullsteam_token_response_success,
+  CVV_CODE
 } from '../test/test-data';
+
+import {
+  CVV_response_codes,
+  error_issuer_response_codes,
+  responseCodes,
+  AVS_response_codes
+} from "../avscodes"
+
+let CVV_Response_Test = CVV_response_codes; 
 
 const hmt_client_processor_settings = {
   api_url : 'http://holdmyticket.loc/api/',
@@ -572,4 +582,16 @@ describe('fullsteam_url', () => {
       else expect(fullsteam_url_response).toBe('https://api-ext.fullsteampay.net/');
     });
   });
+
 });
+
+
+  test('Tests AVS error code responses', async () => {
+    
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+    // CVV_CODE.forEach(code => {fullsteam_AVS_code_response.push(cc_processor.check_fullsteam_codes(CVV_response_codes, code)), console.log(code)}); 
+    console.log(cc_processor.check_fullsteam_codes(CVV_Response_Test, "02"));
+    console.log('testing', fullsteam_AVS_code_response);
+  });
+
+

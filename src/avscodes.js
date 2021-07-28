@@ -1,4 +1,4 @@
-var error_issuer_response_codes = [{
+export const error_issuer_response_codes = [{
     code: "00",
     response: "Transaction Approved"
   },
@@ -404,7 +404,7 @@ var error_issuer_response_codes = [{
   },
 ];
 
-var responseCodes = [{
+export const responseCodes = [{
     code: "-999",
     response: "Unknown – an unknown error has occurred"
   },
@@ -522,7 +522,7 @@ var responseCodes = [{
   },
 ];
 
-var AVS_response_codes = [{
+export const AVS_response_codes = [{
     code: "A",
     response: "Zip code does not match billing records"
   },
@@ -612,7 +612,7 @@ var AVS_response_codes = [{
   },
 ];
 
-var CVV_response_codes = [{
+export const CVV_response_codes = [{
     code: "M",
     response: "Match"
   },

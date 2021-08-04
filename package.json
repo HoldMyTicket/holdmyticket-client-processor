@@ -8,7 +8,7 @@
   "jest": {
     "verbose": true,
     "collectCoverageFrom": [
-      "src/*.js" 
+      "src/*.js"
     ],
     "roots": [
       "<rootDir>",
@@ -35,6 +35,7 @@
     "testEnvironment": "jsdom"
   },
   "scripts": {
+    "dev": "gulp --type dev",
     "test": "jest --coverage",
     "test:watch": "jest --watchAll"
   },

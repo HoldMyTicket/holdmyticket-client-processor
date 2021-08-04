@@ -310,8 +310,8 @@ var hmt_client_processor = function (settings) {
         var avsResponseDescription = res.issuerResponseDetails.avsResponseDescription || "";
         var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode || "";
         var CVVResponseDescription = res.issuerResponseDetails.cvvResponseDescription || "";
-        var responseError = res.responseCode || "";  
-        
+        var responseError = res.responseCode || "";
+
         if(responseError){
           if(this.check_fullsteam_codes(responseCodes, responseError, msg) === undefined){
             msg += "<br/>SERVER RESPONSE: <b>An error has occured, please check all information and resubmit.</b>"
@@ -325,7 +325,7 @@ var hmt_client_processor = function (settings) {
           msg = msg + "<br/>PROCESSING ERROR: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg) + ". " + "Please check your information and resubmit"
         }
         if (CVVResponseCode) {
-          msg = msg + "<br/>CVC ERROR: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg) + ", " + "Please check your card's security number and try again. "
+          msg = msg + "<br/>CVC ERROR: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg) + ". " + "Please check your card's security number and try again. "
         } else {
           if (this.errors_processing.length > 0 && issuerResponseCode == "00")
             // we already have processing error, and there isn't a issuer error, so return...

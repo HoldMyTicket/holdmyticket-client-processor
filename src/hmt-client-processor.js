@@ -316,16 +316,16 @@ var hmt_client_processor = function (settings) {
           if(this.check_fullsteam_codes(responseCodes, responseError, msg) === undefined){
             msg += "<br/>SERVER RESPONSE: <b>An error has occured, please check all information and resubmit.</b>"
           }else
-          msg = msg + "<br/>SERVER RESPONSE: " + this.check_fullsteam_codes(responseCodes, responseError, msg)
+          msg = msg + "<br/>Card Declined: " + this.check_fullsteam_codes(responseCodes, responseError, msg)
         }
         if(issuerResponseCode){
-          msg = msg + "<br/>ISSUER RESPONSE: " + this.check_fullsteam_codes(error_issuer_response_codes, issuerResponseCode, msg)
+          msg = msg + "<br/>Card Declined: " + this.check_fullsteam_codes(error_issuer_response_codes, issuerResponseCode, msg)
         }
         if (avsResponseCode) {
-          msg = msg + "<br/>PROCESSING ERROR: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg) + ". " + "Please check your information and resubmit"
+          msg = msg + "<br/>Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
         }
         if (CVVResponseCode) {
-          msg = msg + "<br/>CVC ERROR: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg) + ". " + "Please check your card's security number and try again. "
+          msg = msg + "<br/>Card Declined, CVV: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg)
         } else {
           if (this.errors_processing.length > 0 && issuerResponseCode == "00")
             // we already have processing error, and there isn't a issuer error, so return...
@@ -343,6 +343,7 @@ var hmt_client_processor = function (settings) {
         "Unable to charge card. Please check Adblocker / Firewall settings and try again."; // CPE4 ERROR
 
       this._add_processing_error(msg);
+     
 
       return false;
     }
@@ -1040,7 +1041,7 @@ var hmt_client_processor = function (settings) {
         d.transaction.processor = {
           merch_gateway: transaction.processor_method ? transaction.processor_method : null,
         }
-      d.transaction.error_msg = this.errors_processing.join('\n')
+      d.transaction.error_msg = this.errors_internal.join('\n')
 
       var xhr = new XMLHttpRequest()
       xhr.open('POST', this.url('shop/carts/log_bad_trans', true), true)
@@ -1759,9 +1760,12 @@ let CVV_response_codes = [{
 this.check_fullsteam_codes = function (errorCodes, flagged) {
   for (let i = 0; i < errorCodes.length; i++) {
     if(errorCodes[i].response === undefined){
+      this._add_internal_error('An unknown error has occured')
       return 'An unknown error has occured'
+      
     }
     if (errorCodes[i].code === flagged) {
+      this._add_internal_error('error reponse' + errorCodes[i].response);
       return `<b>${errorCodes[i].response}</b>`;
     }
   }

@@ -522,7 +522,7 @@ export const responseCodes = [{
   },
 ];
 
-export const AVS_response_codes = [{
+export const fullsteam_response_codes = [{
     code: "A",
     response: "Zip code does not match billing records"
   },

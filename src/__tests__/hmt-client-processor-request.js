@@ -72,28 +72,28 @@ describe('_request', () => {
       url: 'http://google.com',
       type: 'POST',
       data: { test: 'this is a test value' },
-      json: true
-    };
-    const request_response = cc_processor._request(request_options);
+      json: true,
+    }
+    const request_response = cc_processor._request(request_options).then(() => {
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1)
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('content-type', 'application/json;charset=UTF-8')
+    })
+  })
 
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1);
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('content-type', 'application/json;charset=UTF-8');
-  });
-
-  test('if json option is used then the data is JSON stringified', () => {
-    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+  test('if json option is used then the data is JSON stringified', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings)
 
     const request_options = {
       url: 'http://google.com',
       type: 'POST',
       data: { test: 'this is a test value' },
-      json: true
-    };
-    const request_response = cc_processor._request(request_options);
-
-    expect(mockXHR.send).toHaveBeenCalledTimes(1);
-    expect(mockXHR.send).toHaveBeenCalledWith(JSON.stringify(request_options.data));
-  });
+      json: true,
+    }
+    const request_response = cc_processor._request(request_options).then(() => {
+      expect(mockXHR.send).toHaveBeenCalledTimes(1)
+      expect(mockXHR.send).toHaveBeenCalledWith(JSON.stringify(request_options.data))
+    })
+  })
 
   test('if form_encoded option is used then the content-type header is set correctly', () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
@@ -105,13 +105,16 @@ describe('_request', () => {
       url: 'http://google.com',
       type: 'POST',
       data: { test: 'this is a test value' },
-      form_encoded: true
-    };
-    
-    const request_response = cc_processor._request(request_options);
+      form_encoded: true,
+    }
 
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1);
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+    const request_response = cc_processor._request(request_options).then(() => {
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1)
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledWith(
+        'content-type',
+        'application/x-www-form-urlencoded;charset=UTF-8'
+      )
+    })
   })
 
   test('if form_encoded option is used then the post data is serialized', () => {
@@ -133,20 +136,20 @@ describe('_request', () => {
     expect(cc_processor._serializer).toHaveBeenCalledWith(original_request_options.data);
   })
 
-  test('if auth_key option is used then the authenticationKey header is set correctly', () => {
-    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+  test('if auth_key option is used then the authenticationKey header is set correctly', async () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings)
 
     const request_options = {
       url: 'http://google.com',
       type: 'POST',
       data: { test: 'this is a test value' },
-      auth_key: '12345'
-    };
-    const request_response = cc_processor._request(request_options);
-
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1);
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('authenticationKey', request_options.auth_key);
-  });
+      auth_key: '12345',
+    }
+    const request_response = cc_processor._request(request_options).then(() => {
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1)
+      expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('authenticationKey', request_options.auth_key)
+    })
+  })
 
   test('resolves with _xhr_success if status is 200', () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);

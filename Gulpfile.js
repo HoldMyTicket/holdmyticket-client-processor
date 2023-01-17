@@ -21,7 +21,7 @@ function compileJs() {
     babelPlugins.push(["transform-remove-console", { "exclude": [ "error", "warn"] }]);
   }
 
-  return gulp.src(['node_modules/babel-polyfill','src/*.js'], { since: gulp.lastRun(compileJs) })
+  return gulp.src(['node_modules/babel-polyfill','src/*.js', 'src/fullsteamCodes.js'], { since: gulp.lastRun(compileJs) })
 
     .pipe(concat('hmtclientprocessor.min.js'))
 

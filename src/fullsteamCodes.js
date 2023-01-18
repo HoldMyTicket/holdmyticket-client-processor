@@ -528,11 +528,11 @@ export const AVS_response_codes = [{
   },
   {
     code: "B",
-    response: "Incompatible formats (postal code): Street addresses match. Postal code not verified due to incompatible formats",
+    response: "Incompatible Postal Code Format",
   },
   {
     code: "C",
-    response: "Incompatible format (all information): Street address and postal code not verified due to incompatible formats",
+    response: "Incompatible street address and postal code format",
   },
   {
     code: "D",
@@ -548,15 +548,15 @@ export const AVS_response_codes = [{
   },
   {
     code: "G",
-    response: "Global non-AVS participant"
+    response: "Global participant, non-US Issuer does not participate in address service verification."
   },
   {
     code: "I",
-    response: "International Transaction: Address information not verified for international transaction",
+    response: "International Transaction - Address information not verified for international transaction",
   },
   {
     code: "J",
-    response: "American Express only. Card Member information and Ship-To Information Verified – Fraud Protection Program.",
+    response: "American Express only. Card Member information and Ship-To Information Verified – Fraud Protection Program",
   },
   {
     code: "K",
@@ -572,19 +572,19 @@ export const AVS_response_codes = [{
   },
   {
     code: "P",
-    response: "Postal code match.  Street address not verified due to incompatible formats",
+    response: "Incompatible Street Address format",
   },
   {
     code: "R",
-    response: "System unavailable or timed out please resubmit your purchase"
+    response: "System unavailable or timed out, please resubmit your purchase"
   },
   {
     code: "S",
-    response: "Service not supported: issuer does not support AVS",
+    response: "Service not supported - issuer does not support address verification service",
   },
   {
     code: "T",
-    response: "Nine-digit zip code matches, address does not match",
+    response: "Address does not match billing records",
   },
   {
     code: "U",
@@ -592,7 +592,7 @@ export const AVS_response_codes = [{
   },
   {
     code: "W",
-    response: "Whole zip: Nine-digit zip code matches, address does not match.  For Discover, no data provided.",
+    response: "Address does not match billing records.  For Discover Cards, no data was provided",
   },
   {
     code: "X",

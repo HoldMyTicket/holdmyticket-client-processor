@@ -327,29 +327,28 @@ var hmt_client_processor = function(settings){
         var CVVResponseDescription = res.issuerResponseDetails.cvvResponseDescription || "";
         var responseError = res.responseCode || "";
 
-        if(responseError){
-          if(this.check_fullsteam_codes(responseCodes, responseError, msg) === undefined){
-            msg += "<br/>SERVER RESPONSE: <b>An error has occured, please check all information and resubmit.</b>"
-          }else
-          msg = msg + "<br/>Card Declined: " + this.check_fullsteam_codes(responseCodes, responseError, msg)
+        if (avsResponseCode != "D" && avsResponseCode != "E" && avsResponseCode != "F" && avsResponseCode != "J" && avsResponseCode != "K" && avsResponseCode != "M" && avsResponseCode != "X" && avsResponseCode != "Y" && avsResponseCode != "0" && msg == "") {
+          msg = "<br/>Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
+          console.log("<br/>Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg));
         }
-        if(issuerResponseCode){
-          msg = msg + "<br/>Card Declined: " + this.check_fullsteam_codes(error_issuer_response_codes, issuerResponseCode, msg)
-        }
-        if (avsResponseCode) {
-          msg = msg + "<br/>Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
-        }
-        if (CVVResponseCode) {
-          msg = msg + "<br/>Card Declined, CVV: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg)
+        if (CVVResponseCode != "M" && msg == "") {
+          msg = "<br/>Card Declined: Card CVV Security Code Issue" 
+          console.log("<br/>Card Declined, CVV: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg));
         } else {
           if (this.errors_processing.length > 0 && issuerResponseCode == "00")
             // we already have processing error, and there isn't a issuer error, so return...
             return false;
-
           if (msg == "" && (!issuerResponseCode || issuerResponseCode == "00"))
             msg = "CPE2: Missing error code";
-
           if (msg == "") msg = "CPE3: Unknown issuer error";
+        }
+        if(issuerResponseCode && msg == ""){
+          msg = "<br/>Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
+          console.log("<br/>Card Declined: " + this.check_fullsteam_codes(error_issuer_response_codes, issuerResponseCode, msg));
+        }
+        if(responseError && msg == ""){
+          msg = "<br/>Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
+          console.log("<br/>Card Declined: " + this.check_fullsteam_codes(responseCodes, responseError, msg))
         }
       }
 
@@ -1789,11 +1788,11 @@ let AVS_response_codes = [{
   },
   {
     code: "B",
-    response: "Incompatible formats (postal code): Street addresses match. Postal code not verified due to incompatible formats",
+    response: "Incompatible Postal Code Format",
   },
   {
     code: "C",
-    response: "Incompatible format (all information): Street address and postal code not verified due to incompatible formats",
+    response: "Incompatible street address and postal code format",
   },
   {
     code: "D",
@@ -1809,15 +1808,15 @@ let AVS_response_codes = [{
   },
   {
     code: "G",
-    response: "Global non-AVS participant"
+    response: "Global participant, non-US Issuer does not participate in address service verification."
   },
   {
     code: "I",
-    response: "International Transaction: Address information not verified for international transaction",
+    response: "International Transaction - Address information not verified for international transaction",
   },
   {
     code: "J",
-    response: "American Express only. Card Member information and Ship-To Information Verified – Fraud Protection Program.",
+    response: "American Express only. Card Member information and Ship-To Information Verified – Fraud Protection Program",
   },
   {
     code: "K",
@@ -1833,19 +1832,19 @@ let AVS_response_codes = [{
   },
   {
     code: "P",
-    response: "Postal code match.  Street address not verified due to incompatible formats",
+    response: "Incompatible Street Address format",
   },
   {
     code: "R",
-    response: "System unavailable or timed out please resubmit your purchase"
+    response: "System unavailable or timed out, please resubmit your purchase"
   },
   {
     code: "S",
-    response: "Service not supported: issuer does not support AVS",
+    response: "Service not supported - issuer does not support address verification service",
   },
   {
     code: "T",
-    response: "Nine-digit zip code matches, address does not match",
+    response: "Address does not match billing records",
   },
   {
     code: "U",
@@ -1853,7 +1852,7 @@ let AVS_response_codes = [{
   },
   {
     code: "W",
-    response: "Whole zip: Nine-digit zip code matches, address does not match.  For Discover, no data provided.",
+    response: "Address does not match billing records.  For Discover Cards, no data was provided",
   },
   {
     code: "X",
@@ -1897,7 +1896,7 @@ let CVV_response_codes = [{
     code: "X",
     response: "Service provider did not respond",
   },
-];
+  ];
 
 this.check_fullsteam_codes = function (errorCodes, flagged) {
   for (let i = 0; i < errorCodes.length; i++) {

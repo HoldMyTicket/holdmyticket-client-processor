@@ -356,7 +356,7 @@ var hmt_client_processor = function(settings){
         msg =
         "Unable to charge card. Please check Adblocker / Firewall settings and try again."; // CPE4 ERROR
 
-      this._add_processing_error(msg);
+      this._add_processing_error(msg.replaceAll(/<[^>]*>/, ''));
 
 
       return false;

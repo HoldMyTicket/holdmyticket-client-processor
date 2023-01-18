@@ -329,16 +329,16 @@ var hmt_client_processor = function(settings){
         var goodAVSCodes = ["D","E","F","J","K","M","X","Y","0"];
 
         if (CVVResponseCode != "M" && msg == "") {
-          msg = "<br/>Card Declined: Card CVV Security Code Issue" 
+          msg = "Card Declined: Card CVV Security Code Issue" 
         }
         else if (!goodAVSCodes.includes(avsResponseCode)) {
-          msg = "<br/>Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
+          msg = "Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
         }
         else if(issuerResponseCode){
-          msg = "<br/>Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
+          msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
         }
         else if(responseError){
-          msg = "<br/>Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
+          msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
         }
       }
 

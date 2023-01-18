@@ -1857,11 +1857,11 @@ let AVS_response_codes = [{
   },
   {
     code: "X",
-    response: ""
+    response: "Exact: Address and nine-digit zip code match"
   },
   {
     code: "Y",
-    response: ""
+    response: "Yes: Address and five-digit zip code match"
   },
   {
     code: "Z",
@@ -1888,6 +1888,14 @@ let CVV_response_codes = [{
   {
     code: "S",
     response: "CVV value should be on the card, but the merchant has indicated that it is not present",
+  },
+  {
+    code: "U",
+    response: "Issuer is not certified for CVV processing",
+  },
+  {
+    code: "X",
+    response: "Service provider did not respond",
   },
 ];
 

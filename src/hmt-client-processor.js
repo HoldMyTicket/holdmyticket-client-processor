@@ -329,11 +329,11 @@ var hmt_client_processor = function(settings){
 
         if (avsResponseCode != "D" && avsResponseCode != "E" && avsResponseCode != "F" && avsResponseCode != "J" && avsResponseCode != "K" && avsResponseCode != "M" && avsResponseCode != "X" && avsResponseCode != "Y" && avsResponseCode != "0" && msg == "") {
           msg = "<br/>Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
-          console.log("<br/>Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg));
+          console.log("Card Declined AVS Error: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg));
         }
         if (CVVResponseCode != "M" && msg == "") {
           msg = "<br/>Card Declined: Card CVV Security Code Issue" 
-          console.log("<br/>Card Declined, CVV: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg));
+          console.log("Card Declined CVV Error: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg));
         } else {
           if (this.errors_processing.length > 0 && issuerResponseCode == "00")
             // we already have processing error, and there isn't a issuer error, so return...
@@ -344,11 +344,11 @@ var hmt_client_processor = function(settings){
         }
         if(issuerResponseCode && msg == ""){
           msg = "<br/>Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
-          console.log("<br/>Card Declined: " + this.check_fullsteam_codes(error_issuer_response_codes, issuerResponseCode, msg));
+          console.log("Card Declined Issuer Error: " + this.check_fullsteam_codes(error_issuer_response_codes, issuerResponseCode, msg));
         }
         if(responseError && msg == ""){
           msg = "<br/>Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
-          console.log("<br/>Card Declined: " + this.check_fullsteam_codes(responseCodes, responseError, msg))
+          console.log("Card Declined Response Error: " + this.check_fullsteam_codes(responseCodes, responseError, msg))
         }
       }
 

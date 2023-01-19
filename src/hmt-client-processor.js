@@ -326,16 +326,16 @@ var hmt_client_processor = function(settings){
         var CVVResponseDescription = res.issuerResponseDetails.cvvResponseDescription || "";
         var responseError = res.responseCode || "";
 
-        if (res.responseCode == 161 || res.responseCode == 160) {
+        if (responseError == 160 || res.responseCode == 161) {
           msg = "Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
         }
-        else if (res.responseCode == 162) {
+        else if (responseError == 162) {
           msg = "Card Declined: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg)
         }
         else if(issuerResponseCode){
           msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
         }
-        else if(responseError){
+        else if(responseError != 0){
           msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
         }
       }

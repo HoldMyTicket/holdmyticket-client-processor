@@ -248,7 +248,7 @@ export const error_issuer_response_codes = [{
   },
   {
     code: "85",
-    response: "No reason to decline on verify request"
+    response: "Unknown Error - Please try again in a few minutes. If the problem persists, contact the card issuing bank for further assistance"
   },
   {
     code: "87",

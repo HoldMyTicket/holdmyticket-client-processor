@@ -328,7 +328,7 @@ var hmt_client_processor = function(settings){
 
         var goodAVSCodes = ["D","E","F","J","K","M","X","Y","0"];
 
-        if (CVVResponseCode != "M" && msg == "") {
+        if (CVVResponseCode != "M") {
           msg = "Card Declined: Card CVV Security Code Issue" 
         }
         else if (!goodAVSCodes.includes(avsResponseCode)) {
@@ -1146,7 +1146,7 @@ var hmt_client_processor = function(settings){
 
       if(!d.transaction.processor)
         d.transaction.processor = { merch_gateway: transaction.processor_method ? transaction.processor_method : null }
-      d.transaction.error_msg = this.errors_processing.join("\n")
+      d.transaction.error_msg = this.errors_processing[0].replace(/<[^>]*>/g, "");
 
       var xhr = new XMLHttpRequest();
       xhr.open('POST', this.url('shop/carts/log_bad_trans', true), true);

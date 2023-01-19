@@ -540,7 +540,7 @@ export const AVS_response_codes = [{
   },
   {
     code: "E",
-    response: "Edit error: For example, AVS not allowed for this transaction",
+    response: "Edit error",
   },
   {
     code: "F",
@@ -548,7 +548,7 @@ export const AVS_response_codes = [{
   },
   {
     code: "G",
-    response: "Global participant, non-US Issuer does not participate in address service verification."
+    response: "Global participant, non-US Issuer does not participate in address service verification"
   },
   {
     code: "I",

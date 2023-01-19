@@ -1,4 +1,5 @@
 import Qs from 'qs';
+import { CVV_response_codes, error_issuer_response_codes, responseCodes, AVS_response_codes } from '../src/fullsteamCodes/fullsteamCodes';
 
 var hmt_client_processor = function(settings){
 
@@ -330,7 +331,7 @@ var hmt_client_processor = function(settings){
           msg = "Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
         }
         else if (responseError == 162) {
-          msg = "Card Declined: " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg)
+          msg = "Card Declined: CVV Error - " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg)
         }
         else if(responseError != 0){
           msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."

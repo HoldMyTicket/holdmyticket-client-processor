@@ -9,7 +9,7 @@ import {
   fullsteam_token_response_success
 } from '../test/test-data';
 
-import { CVV_response_codes, error_issuer_response_codes, responseCodes, AVS_response_codes } from '../fullsteamCodes'
+import { CVV_response_codes, error_issuer_response_codes, responseCodes, AVS_response_codes } from '../fullsteamCodes/fullsteamCodes'
 
 const hmt_client_processor_settings = {
   api_url : 'http://holdmyticket.loc/api/',

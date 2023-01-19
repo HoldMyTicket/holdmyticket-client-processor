@@ -8,11 +8,31 @@
   "jest": {
     "verbose": true,
     "collectCoverageFrom": [
-      "src/hmt-client-processor.js"
+      "src/*.js"
     ],
-    "coveragePathIgnorePatterns": [
-      "/node_modules/"
-    ]
+    "roots": [
+      "<rootDir>",
+      "node_modules"
+    ],
+    "modulePaths": [
+      "<rootDir>",
+      "node_modules"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "src"
+    ],
+    "moduleFileExtensions": [
+      "web.js",
+      "js",
+      "json",
+      "web.jsx",
+      "jsx",
+      "node",
+      "mjs",
+      "ts"
+    ],
+    "testEnvironment": "jsdom"
   },
   "scripts": {
     "dev": "gulp --type dev",

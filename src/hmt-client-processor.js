@@ -1234,7 +1234,7 @@ var hmt_client_processor = function(settings){
   // add a processing error
   this._add_processing_error = function(err){
     this.errors_processing.push(err)
-    return false
+    return false  
   }
 
   this._copy_object = function(obj){
@@ -1251,7 +1251,7 @@ var hmt_client_processor = function(settings){
 this.check_fullsteam_codes = function (errorCodes, flagged) {
   for (let i = 0; i < errorCodes.length; i++) {
     if(errorCodes[i].response === undefined){
-      this._add_internal_error('An unknown error has occured')
+      this._add_internal_error('An unknown error has occurred')
       return 'An unknown error has occurred.'
 
     }

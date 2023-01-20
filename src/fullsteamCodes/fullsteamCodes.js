@@ -626,7 +626,7 @@ export const CVV_response_codes = [{
   },
   {
     code: "N",
-    response: "No Match"
+    response: "Incorrect CVV (Security Code)"
   },
   {
     code: "P",

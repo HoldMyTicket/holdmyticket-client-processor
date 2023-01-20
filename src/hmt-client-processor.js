@@ -1252,15 +1252,15 @@ this.check_fullsteam_codes = function (errorCodes, flagged) {
   for (let i = 0; i < errorCodes.length; i++) {
     if(errorCodes[i].response === undefined){
       this._add_internal_error('An unknown error has occured')
-      return 'An unknown error has occured'
+      return 'An unknown error has occurred.'
 
     }
     if (errorCodes[i].code === flagged) {
-      this._add_internal_error('error reponse' + errorCodes[i].response);
+      this._add_internal_error('error response' + errorCodes[i].response);
       return `<b>${errorCodes[i].response}</b>`;
     }
   }
-  return 'Unknown error code has been submitted from the external server'
+  return 'Unknown error code occurred. Please try again.'
 };
 
 }

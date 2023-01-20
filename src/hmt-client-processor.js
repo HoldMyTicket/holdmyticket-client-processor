@@ -334,9 +334,9 @@ var hmt_client_processor = function(settings){
           msg = "Card Declined: CVV Error - " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg)
         }
         else if(responseError != 0){
-          msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
+          msg = "Card Declined: " + this.check_fullsteam_codes(responseCodes, responseError, msg)
         }
-        else if(issuerResponseCode){
+        else {
           msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
         }
       }

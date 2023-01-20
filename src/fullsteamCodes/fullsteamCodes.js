@@ -410,7 +410,7 @@ export const responseCodes = [{
   },
   {
     code: "1",
-    response: "System Error – an error within the FullsteamPay system has occurred that prevented the successful processing of the request. Try again and if the error continues please contact Fullsteam.",
+    response: "System Error – processing of transaction failed. Please try again.",
   },
   {
     code: "10",
@@ -438,11 +438,11 @@ export const responseCodes = [{
   },
   {
     code: "400",
-    response: "Communication Error – there has been a communication error with an external resource that caused the processing of the request to fail",
+    response: "Communication Error – there has been a communication error with an external resource that caused the processing of the request to fail. Please try again.",
   },
   {
     code: "999",
-    response: "Authentication Failure – the credentials provided are invalid or user does not have permission for action requested",
+    response: "Authentication Failure – the credentials provided are invalid or user does not have permission for action requested.",
   },
   {
     code: "1007",
@@ -450,11 +450,11 @@ export const responseCodes = [{
   },
   {
     code: "1020",
-    response: "ProcessorDecline – Fullsteam received a Decline response from the processor. This means the card issuer has declined to process the transaction without a specific reason provided.  Card holder may call the card issuer for more information.",
+    response: "Card issuer has declined the transaction due to unspecified reason. Please contact card issuer for more information.",
   },
   {
     code: "1021",
-    response: "Expired Card – Fullsteam received an Expired Card response from the processor.  This means the card issuer has declined the transaction because the card is expired, or the expiration date provided is invalid.",
+    response: "Expired Card – the card issuer has declined the transaction because the card is expired, or the expiration date provided is invalid.",
   },
   {
     code: "1023",
@@ -462,7 +462,7 @@ export const responseCodes = [{
   },
   {
     code: "1024",
-    response: "Processor Pickup Card – Fullsteam received a Pickup Card response from the processor. This means the card issuer has decided to decline the transaction and has requested that the merchant pick up the card from the card holder.",
+    response: "Card issuer has declined the transaction, card no longer valid.",
   },
   {
     code: "1025",
@@ -478,7 +478,7 @@ export const responseCodes = [{
   },
   {
     code: "1101",
-    response: "Processor Invalid Data – Fullsteam received an Invalid Data response from the processor.  This means the processor considers the request that Fullsteam sent invalid.  Usually the invalid information will be described in the response to the FullsteamPay API call.  If the invalid information can be corrected on the integrator side, please correct and try again.  If not, please contact Fullsteam.",
+    response: "Invalid Data – Information provided is invalid, please correct all information inputted and try again.",
   },
   {
     code: "1102",
@@ -486,15 +486,19 @@ export const responseCodes = [{
   },
   {
     code: "1103",
-    response: "Processor Invalid Request – Fullsteam received an Invalid Request response from the processor.  Usually the response message inside the response details will indicate the error.  If integrator can correct, please do so and try again.  If not, please contact Fullsteam.",
+    response: "Invalid Request – Please carefully resubmit all information inputted and try again.",
   },
+  {
+    code: '1105',
+    response: 'Card number or card type submitted is invalid.'
+  },  
   {
     code: "1120",
     response: "Processor Out of Balance – Fullsteam received an Out of Balance response from the processor.  This should not occur because this error only occurs on merchant-initiated batch closes which are not currently supported.",
   },
   {
     code: "2001",
-    response: "Processor Communication Error – Fullsteam received a Communication Error from the processor.  This means the processor experienced an error trying to communicate with the card issuer and the transaction request cannot be processed.  It is possible that the card holder will see an open authorization if they view their card statement online after this error.  However, the transaction has been voided and will not settle.",
+    response: "Processor Communication Error – the processor experienced an error trying to communicate with the card issuer and the transaction request cannot be processed. This transaction has been voided. Please try again.",
   },
   {
     code: "2002",
@@ -503,6 +507,10 @@ export const responseCodes = [{
   {
     code: "2009",
     response: "Processor Error – Fullsteam received an Error response from the Processor. This means the processor or the card issuer experienced an error attempting to process the request and the transaction request was not processed.",
+  },
+  {
+    code: '2999',
+    response: 'Processor Unknown Response – Fullsteam received an unknown response from the processor.'
   },
   {
     code: "3101",

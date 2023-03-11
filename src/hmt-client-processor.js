@@ -319,12 +319,8 @@ var hmt_client_processor = function(settings){
 
       if (res && res.issuerResponseDetails) {
 
-        var issuerResponseCode = res.issuerResponseDetails.issuerResponseCode || 0;
-        var issuerResponseDescription = res.issuerResponseDetails.issuerResponseDescription || "";
         var avsResponseCode = res.issuerResponseDetails.avsResponseCode || "";
-        var avsResponseDescription = res.issuerResponseDetails.avsResponseDescription || "";
         var CVVResponseCode = res.issuerResponseDetails.cvvResponseCode || "";
-        var CVVResponseDescription = res.issuerResponseDetails.cvvResponseDescription || "";
         var responseError = res.responseCode || "";
 
         if (responseError == 160 || res.responseCode == 161) {
@@ -1250,12 +1246,11 @@ var hmt_client_processor = function(settings){
 
 this.check_fullsteam_codes = function (errorCodes, flagged) {
   for (let i = 0; i < errorCodes.length; i++) {
-    if(errorCodes[i].response === undefined){
-      this._add_internal_error('An unknown error has occurred')
-      return 'An unknown error has occurred.'
-
-    }
     if (errorCodes[i].code === flagged) {
+      if(errorCodes[i].response === undefined){
+        this._add_internal_error('An unknown error has occurred')
+        return 'An unknown error has occurred.'
+      }
       this._add_internal_error('error response' + errorCodes[i].response);
       return `<b>${errorCodes[i].response}</b>`;
     }

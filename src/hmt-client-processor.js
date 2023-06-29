@@ -324,7 +324,7 @@ var hmt_client_processor = function(settings){
         var responseError = res.responseCode || "";
 
         if (responseError == 160 || res.responseCode == 161) {
-          msg = "Card Declined: " + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
+          msg = "Card Declined: Address Error -" + this.check_fullsteam_codes(AVS_response_codes, avsResponseCode, msg)
         }
         else if (responseError == 162) {
           msg = "Card Declined: CVV Error - " + this.check_fullsteam_codes(CVV_response_codes, CVVResponseCode, msg)

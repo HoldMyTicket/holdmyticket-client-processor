@@ -8,6 +8,8 @@ gulp --type dev
 
 to publish new version
 
+update package.json version number
+
 ```
 yarn publish
 ```

@@ -198,7 +198,7 @@ export const AVS_response_codes = [{
   },
   {
     code: "X",
-    response: "Exact: Address and nine-digit zip code match"
+    response: "Exact: Address and nine-digit zip code must match exact"
   },
   {
     code: "Y",

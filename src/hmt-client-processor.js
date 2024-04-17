@@ -217,6 +217,11 @@ var hmt_client_processor = function(settings){
     )
       auth_key = authentication_key_res.authenticationKey
 
+    if(!auth_key){
+      this._add_processing_error(authentication_key_res.msg || 'Processor error');
+      return false;
+    }
+
     var token_res = await this._get_fullsteam_token(card, transaction, auth_key)
 
     if(!token_res || !token_res.isSuccessful)
@@ -338,8 +343,7 @@ var hmt_client_processor = function(settings){
       }
 
       if (msg == "" && this.errors_processing.length == 0)
-        msg =
-        "Unable to charge card. Please check Adblocker / Firewall settings and try again."; // CPE4 ERROR
+        msg = "Unable to charge card. Please check Adblocker / Firewall settings and try again."; // CPE4 ERROR
 
       this._add_processing_error(msg);
 
@@ -417,8 +421,13 @@ var hmt_client_processor = function(settings){
 
     if(!authentication_key_res.status ||
       authentication_key_res.status != 'ok' ||
-      !authentication_key_res.auth_key)
-      return false
+      !authentication_key_res.auth_key) {
+      return {
+        status: 'error',
+        msg: authentication_key_res.msg || 'An error has occurred. Please try again.',
+        code: authentication_key_res.code || 0
+      }
+    }
 
 
     var token_res = await this._get_authnet_token(card, transaction, authentication_key_res)

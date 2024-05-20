@@ -202,8 +202,6 @@ var hmt_client_processor = function(settings){
 
   this._submit_fullsteam = async function(card, transaction, cb){
 
-    console.log({card, transaction, cb});
-
     // saved payment tokens can be submitted without needing to create a token, simply submit payment token
     if (transaction.payment_token)
       return await this._submit_fullsteam_transaction(transaction)

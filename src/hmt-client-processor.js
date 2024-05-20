@@ -202,6 +202,8 @@ var hmt_client_processor = function(settings){
 
   this._submit_fullsteam = async function(card, transaction, cb){
 
+    console.log({card, transaction, cb});
+
     // saved payment tokens can be submitted without needing to create a token, simply submit payment token
     if (transaction.payment_token)
       return await this._submit_fullsteam_transaction(transaction)
@@ -218,7 +220,7 @@ var hmt_client_processor = function(settings){
       auth_key = authentication_key_res.authenticationKey
 
     if(!auth_key){
-      this._add_processing_error(authentication_key_res.msg || 'Processor error');
+      this._add_processing_error(authentication_key_res.msg || 'Processor error (Code: CP10001)');
       return false;
     }
 

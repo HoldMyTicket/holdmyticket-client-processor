@@ -9,7 +9,7 @@ import {
   fullsteam_token_response_success
 } from '../test/test-data';
 
-import { CVV_response_codes, error_issuer_response_codes, responseCodes, AVS_response_codes } from '../fullsteamCodes/fullsteamCodes'
+import { CVV_response_codes, responseCodes, AVS_response_codes } from '../fullsteamCodes/fullsteamCodes'
 
 const hmt_client_processor_settings = {
   api_url : 'http://holdmyticket.loc/api/',
@@ -577,14 +577,25 @@ describe('fullsteam_url', () => {
   })
 
   test('Tests various error code responses for credit processing', async () => {
-    const cc_processor = new hmt_client_processor(hmt_client_processor_settings)
-    // CVV_CODE.forEach(code => {fullsteam_AVS_code_response.push(cc_processor.check_fullsteam_codes(CVV_response_codes, code)), console.log(code)});
-    let codeArray = [error_issuer_response_codes, responseCodes, AVS_response_codes, CVV_response_codes]
-    for (let a = 0; a < codeArray.length; a++) {
-      for (let i = 0; i < codeArray[a].length; i++) {
-        let response = cc_processor.check_fullsteam_codes(codeArray[a], codeArray[a][i].code)
-        expect(response).toBe(`<b>${codeArray[a][i].response}</b>`)
-      }
-    }
-  })
-})
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+  
+    let codeArrays = [responseCodes, AVS_response_codes, CVV_response_codes];
+  
+    codeArrays.forEach((codeArray, index) => {  
+      expect(codeArray).toBeInstanceOf(Array);
+  
+      codeArray.forEach((codeObject, i) => {  
+        expect(codeObject).toBeInstanceOf(Object);
+  
+        // Check if codeObject has the expected structure
+        if (!('code' in codeObject) || !('response' in codeObject)) {
+          expect(true).toBe(false, 'codeObject does not have required properties');
+        }
+  
+        // Run the function and check the response
+        let response = cc_processor.check_fullsteam_codes(codeArray, codeObject.code);
+        expect(response).toBe(`<b>${codeObject.response}</b>`);
+      });
+    });
+  });
+});

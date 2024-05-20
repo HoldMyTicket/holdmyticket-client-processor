@@ -1,10 +1,11 @@
 const gulp = require('gulp');
-const util = require('gulp-util');
 const concat = require('gulp-concat');
 const childProcess = require('child_process');
 const babel = require("gulp-babel");
 const webpack = require('webpack-stream');
 const path = require('path');
+const log = require('fancy-log');
+const colors = require('ansi-colors');
 
 // finding the type flag assuming that the arg after --type is the actual type (dev, production)
 const typeFlag = process.argv[process.argv.findIndex(arg => arg === '--type') + 1];
@@ -13,7 +14,7 @@ const validTypes = ['publish','dev'];
 
 function compileJs() {
 
-  util.log(util.colors.green('Compiling to dist file.'));
+  log(colors.green('Compiling to dist file.'));
 
   const babelPlugins = ["@babel/transform-runtime"];
 
@@ -61,7 +62,7 @@ function compileJs() {
 
 function startDevServer(){
 
-  util.log(util.colors.green('Opening browser on port: http://localhost:8383.'));
+  log(colors.green('Opening browser on port: http://localhost:8383.'));
 
   childProcess.exec('php -S localhost:8383 -t dist', function(stdout, stderror) {
 

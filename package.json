@@ -1,9 +1,9 @@
 {
   "name": "holdmyticket-client-processor",
-  "version": "0.0.76",
+  "version": "0.0.79",
   "main": "/dist/hmtclientprocessor.min.js",
   "repository": "https://github.com/HoldMyTicket/holdmyticket-client-processor.git",
-  "author": "wes@holdmyticket.com",
+  "author": "devs@holdmyticket.com",
   "license": "MIT",
   "jest": {
     "verbose": true,

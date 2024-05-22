@@ -1,6 +1,6 @@
 {
   "name": "holdmyticket-client-processor",
-  "version": "0.0.79",
+  "version": "0.0.80",
   "main": "/dist/hmtclientprocessor.min.js",
   "repository": "https://github.com/HoldMyTicket/holdmyticket-client-processor.git",
   "author": "devs@holdmyticket.com",
@@ -57,10 +57,11 @@
     "gulp-babel": "^8.0.0",
     "gulp-concat": "^2.6.1",
     "jest": "^27.0.6",
-    "qs": "^6.9.1",
     "webpack": "^5.91.0",
     "webpack-stream": "^7.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "qs": "^6.9.1"
+  },
   "peerDependencies": {}
 }

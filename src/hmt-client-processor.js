@@ -71,18 +71,13 @@ var hmt_client_processor = function(settings){
       this._respond(error, res, cb)
 
     }
-
-    // determine the method to use stripe | fullsteam | authnet
-    if(transaction.processor_method == 'stripe'){
-
-      this._submit_stripe(card, transaction, cb).then((result) => {
+      
+    // determine the method to use spreedly | fullsteam | authnet | stripe
+    if(transaction.processor_method == 'spreedly'){
+      // Spreedly is going away soon.
+      this._submit_spreedly(card, transaction, cb).then((result) => {
         response(result, cb, transaction)
-      });
-
-      // Spreedly no more!
-      // this._submit_spreedly(card, transaction, cb).then((result) => {
-      //   response(result, cb, transaction)
-      // })
+      })
     }else if(transaction.processor_method == 'fullsteam'){
       this._submit_fullsteam(card, transaction, cb).then((result) => {
         response(result, cb, transaction)
@@ -91,6 +86,10 @@ var hmt_client_processor = function(settings){
       this._submit_authnet(card, transaction, cb).then((result) => {
         response(result, cb, transaction)
       })
+    }else if(transaction.processor_method == 'stripe'){
+      this._submit_stripe(card, transaction, cb).then((result) => {
+        response(result, cb, transaction)
+      });
     }else{
       this._add_internal_error('No processing method setup')
       response(false, cb, transaction)
@@ -254,6 +253,12 @@ var hmt_client_processor = function(settings){
 
   }
 
+  /**
+   * Makes a call to HMT backend to get the auth key based on the processor
+   * 
+   * @param {*} transaction 
+   * @returns 
+   */
   this._get_auth_key = async function(transaction){
     //hit HMT servers to get a public key used for obtaining card token
     var processor_hash = transaction && transaction.processor_hash ? transaction.processor_hash : ''
@@ -1146,8 +1151,6 @@ var hmt_client_processor = function(settings){
       var xhr = new XMLHttpRequest();
       xhr.open(opts.type || 'GET', url);
       xhr.withCredentials = opts.withCredentials || false;
-
-      console.log({data, headers});
 
       for(var key in headers)
         xhr.setRequestHeader(key, headers[key])

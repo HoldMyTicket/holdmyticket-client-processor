@@ -40,8 +40,12 @@ var hmt_client_processor = function(settings){
     return 'https://' + (this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? 'apitest.authorize.net' : 'api2.authorize.net') + '/xml/v1/request.api';
   }
 
+  this.stripe_url = function() {
+    return 'https://api.stripe.com/v1/';
+  }
+
   this.stripe_token_url = function() {
-    return 'https://' + (this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? 'apitest.authorize.net' : 'api2.authorize.net') + '/xml/v1/request.api';
+    return this.stripe_url() + 'tokens';
   }
 
   /*
@@ -267,6 +271,8 @@ var hmt_client_processor = function(settings){
       params.captcha_token = this.captcha_token;
     if(processor_hash)
       params.processor_hash = processor_hash;
+
+    params.v = '0.0.83';
 
     var token_res = await this._request({
       url: this.url(this.auth_key_url(), true)+(params ? ('?' + Qs.stringify(params)) : ''),
@@ -610,10 +616,14 @@ var hmt_client_processor = function(settings){
       return false;
     }
 
-    var token_res = await this._get_stripe_token(card, transaction, auth_key, account_id)
+    var token_res = await this._get_stripe_token(card, transaction, auth_key, account_id);
 
-    if(!token_res || !token_res.id)
-      return false
+    if(!token_res || !token_res.id) {
+      if(!token_res){
+        this._add_processing_error('Unable to charge card. Please check Adblocker / Firewall settings and try again.')
+      }
+      return this._add_internal_error('Stripe, Could not get token');
+    }
 
     transaction.payment_token = token_res.id
 
@@ -723,7 +733,7 @@ var hmt_client_processor = function(settings){
     formData.append('card[address_country]', this._get_fullsteam_contry_code(transaction));
     formData.append('card[name]', card.payment_method.credit_card.full_name);
 
-    const response = await fetch('https://api.stripe.com/v1/tokens', {
+    const response = await fetch(this.stripe_token_url(), {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + auth_key, // HMT Account Publishable Key
@@ -733,7 +743,14 @@ var hmt_client_processor = function(settings){
         body: formData.toString(),
     });
 
-    return await response.json();
+    const json = await response.json();
+
+    if(!json.id){
+      this._add_processing_error(json.error.message)
+
+    }
+
+    return json;
   };
 
   /** END STRIPE */

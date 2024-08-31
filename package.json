@@ -58,7 +58,7 @@
     "gulp-babel": "^8.0.0",
     "gulp-concat": "^2.6.1",
     "jest": "^27.0.6",
-    "webpack": "^5.91.0",
+    "webpack": "^5.94.0",
     "webpack-stream": "^7.0.0"
   },
   "dependencies": {

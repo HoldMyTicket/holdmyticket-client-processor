@@ -600,17 +600,19 @@ var hmt_client_processor = function(settings){
     if (transaction.payment_token && transaction.stripe_account_id)
       return await this._submit_stripe_transaction(transaction)
 
-    var account_id = transaction.stripe_account_id || null;
+    var account_id;
     var authentication_key_res = await this._get_auth_key()
     var auth_key = null
 
     if(authentication_key_res &&
       authentication_key_res.status &&
       authentication_key_res.status == 'ok' &&
-      authentication_key_res.auth_key
-    )
-      auth_key = authentication_key_res.auth_key
-
+      authentication_key_res.auth_key &&
+      authentication_key_res.stripe_account_id
+    ) {
+      auth_key = authentication_key_res.auth_key;
+      account_id = authentication_key_res.stripe_account_id;
+    }
     if(!auth_key){
       this._add_processing_error(authentication_key_res.msg || 'Processor error (Code: CP10001)');
       return false;
@@ -631,10 +633,11 @@ var hmt_client_processor = function(settings){
 
     if(transaction_res && transaction_res.ticket_key)
       /** @TODO check this */
-      this._save_card_to_webuser({ticket_key: transaction_res.ticket_key})
+      this._save_card_to_webuser({ticket_key: transaction_res.ticket_key, auth_key: auth_key, processor: 'stripe', token: token_res.token})
 
-    if(transaction.cc_retain && transaction.cc_retain == 'y'){
-      this._save_card(card, transaction, 'stripe')
+    if(transaction?.cc_retain == 'y'){
+      transaction.auth_key = auth_key
+      this._save_card(card, transaction, 'stripe', transaction_res.ticket_key)
     }
 
     return transaction_res
@@ -785,7 +788,7 @@ var hmt_client_processor = function(settings){
     }
 
     if(processor == 'stripe'){
-      const token_res = await this._get_stripe_token(card, transaction, auth_key, account_id);
+      const token_res = await this._get_stripe_token(card, transaction, transaction.auth_key, transaction.stripe_account_id);
 
       if(!token_res || !token_res.id)
         return
@@ -1067,6 +1070,8 @@ var hmt_client_processor = function(settings){
       this.card_processor = args.processor
     if(args.ticket_key)
       this.card_ticket_key = args.ticket_key
+    if(args.auth_key)
+      this.card_auth_key = args.auth_key
 
   }
 
@@ -1140,6 +1145,8 @@ var hmt_client_processor = function(settings){
       else if(opts.auth_key) {
         headers['authenticationKey'] = opts.auth_key
       }
+
+      headers['x-hmtcp-version'] = '0.0.83';
 
       var url = opts.url
 
@@ -1237,6 +1244,7 @@ var hmt_client_processor = function(settings){
     } catch(error) {
       console.error('xhr error', error)
       console.error('could not parse the response to json', xhr)
+      res.message = error
     }
 
     if(!res.status && res.status !== 'error')

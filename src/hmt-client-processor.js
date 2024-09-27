@@ -628,6 +628,7 @@ var hmt_client_processor = function(settings){
     }
 
     transaction.payment_token = token_res.id
+    transaction.stripe_account_id = account_id
 
     var transaction_res = await this._submit_stripe_transaction(transaction)
 

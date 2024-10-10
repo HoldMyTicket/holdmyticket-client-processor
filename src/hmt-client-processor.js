@@ -595,7 +595,7 @@ var hmt_client_processor = function(settings){
   /* STRIPE */
 
   this._submit_stripe = async function(card, transaction, cb){
-
+    console.log({transaction})
     // saved payment tokens can be submitted without needing to create a token, simply submit payment token
     if (transaction.payment_token && transaction.stripe_account_id)
       return await this._submit_stripe_transaction(transaction)
@@ -613,6 +613,7 @@ var hmt_client_processor = function(settings){
       auth_key = authentication_key_res.auth_key;
       account_id = authentication_key_res.stripe_account_id;
     }
+
     if(!auth_key){
       this._add_processing_error(authentication_key_res.msg || 'Processor error (Code: CP10001)');
       return false;
@@ -632,14 +633,7 @@ var hmt_client_processor = function(settings){
 
     var transaction_res = await this._submit_stripe_transaction(transaction)
 
-    if(transaction_res && transaction_res.ticket_key)
-      /** @TODO check this */
-      this._save_card_to_webuser({ticket_key: transaction_res.ticket_key, auth_key: auth_key, processor: 'stripe', token: token_res.token})
-
-    if(transaction?.cc_retain == 'y'){
-      transaction.auth_key = auth_key
-      this._save_card(card, transaction, 'stripe', transaction_res.ticket_key)
-    }
+    // no saving cards to webuser for stripe
 
     return transaction_res
 

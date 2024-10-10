@@ -73,6 +73,7 @@ export const stripe_transaction_data = {
   export const stripe_authentication_key_response_success = {
     "request_number": 23,
     "auth_key": "pk_test_KW9spdmIczhzrrfeMrgBC41a",
+    "stripe_account_id": "acct_1PnJZxPIBRU4yQMf",
     "status": "ok",
     "msg": "key found"
   }

@@ -132,14 +132,20 @@ describe('_submit_stripe', () => {
     jest.spyOn(cc_processor, '_get_stripe_token');
     jest.spyOn(cc_processor, '_submit_stripe_transaction');
     jest.spyOn(cc_processor, '_get_auth_key');
-    cc_processor._get_stripe_token.mockImplementationOnce((card, stripe_environment_key, cb) => Promise.resolve(stripe_token_response_success));
-    cc_processor._submit_stripe_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
-    cc_processor._get_auth_key.mockImplementationOnce((transaction) => Promise.resolve(stripe_authentication_key_response_success));
+    cc_processor._get_stripe_token.mockImplementationOnce(() => Promise.resolve(stripe_token_response_success));
+    cc_processor._submit_stripe_transaction.mockImplementationOnce(() => Promise.resolve(successful_transaction_response));
+    cc_processor._get_auth_key.mockImplementationOnce(() => Promise.resolve(stripe_authentication_key_response_success));
 
-    const cc_processor_response = await cc_processor._submit_stripe(fresh_card_data, fresh_stripe_transaction_data);
+    const transaction_data = Object.assign({}, fresh_stripe_transaction_data);
+    const token = transaction_data.payment_token; // we need to delete the token so the processor goes to get one
+    delete transaction_data.payment_token;
+
+    const cc_processor_response = await cc_processor._submit_stripe(fresh_card_data, transaction_data);
     
+    transaction_data.payment_token = token; // since we are mocking, we'll need to add the token back to the transaction data
+
     expect(cc_processor._get_stripe_token).toHaveBeenCalledTimes(1);
-    expect(cc_processor._get_stripe_token).toHaveBeenCalledWith(fresh_card_data, fresh_stripe_transaction_data, stripe_authentication_key_response_success.auth_key, fresh_stripe_transaction_data.stripe_account_id);
+    expect(cc_processor._get_stripe_token).toHaveBeenCalledWith(fresh_card_data, transaction_data, stripe_authentication_key_response_success.auth_key, fresh_stripe_transaction_data.stripe_account_id);
 
     expect(cc_processor._submit_stripe_transaction).toHaveBeenCalledTimes(1);
     expect(cc_processor._submit_stripe_transaction).toHaveBeenCalledWith(fresh_stripe_transaction_data);
@@ -148,51 +154,6 @@ describe('_submit_stripe', () => {
     cc_processor._get_stripe_token.mockRestore();
     cc_processor._submit_stripe_transaction.mockRestore();
   });
-
-  test.skip('saves card to webuser if transaction response has ticket key', async () => {
-    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
-
-    jest.spyOn(cc_processor, '_get_stripe_token');
-    jest.spyOn(cc_processor, '_submit_stripe_transaction');
-    jest.spyOn(cc_processor, '_save_card_to_webuser');
-    cc_processor._get_stripe_token.mockImplementationOnce((card, stripe_environment_key, cb) => Promise.resolve(stripe_token_response_success));
-    cc_processor._submit_stripe_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
-    cc_processor._save_card_to_webuser.mockImplementationOnce((args) => Promise.resolve(undefined));
-    
-    const cc_processor_response = await cc_processor._submit_stripe(fresh_card_data, fresh_stripe_transaction_data);
-
-    expect(cc_processor._save_card_to_webuser).toHaveBeenCalledTimes(1);
-    expect(cc_processor._save_card_to_webuser).toHaveBeenCalledWith({ticket_key: successful_transaction_response.ticket_key});
-
-    cc_processor._get_stripe_token.mockRestore();
-    cc_processor._submit_stripe_transaction.mockRestore();
-    cc_processor._save_card_to_webuser.mockRestore();
-  });
-
-  test.skip('saves card for stripe if transaction has cc_retain = y', async () => {
-    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
-
-    jest.spyOn(cc_processor, '_get_stripe_token');
-    jest.spyOn(cc_processor, '_submit_stripe_transaction');
-    jest.spyOn(cc_processor, '_save_card_to_webuser');
-    jest.spyOn(cc_processor, '_save_card');
-    cc_processor._get_stripe_token.mockImplementationOnce((card, stripe_environment_key, cb) => Promise.resolve(stripe_token_response_success));
-    cc_processor._submit_stripe_transaction.mockImplementationOnce((transaction) => Promise.resolve(successful_transaction_response));
-    cc_processor._save_card_to_webuser.mockImplementationOnce((args) => Promise.resolve(undefined));
-    cc_processor._save_card.mockImplementationOnce((args) => Promise.resolve(undefined));
-
-    fresh_stripe_transaction_data.cc_retain = 'y';
-    
-    const cc_processor_response = await cc_processor._submit_stripe(fresh_card_data, fresh_stripe_transaction_data);
-
-    expect(cc_processor._save_card).toHaveBeenCalledTimes(1);
-    expect(cc_processor._save_card).toHaveBeenCalledWith(fresh_card_data, fresh_stripe_transaction_data, 'fullsteam');
-
-    cc_processor._get_stripe_token.mockRestore();
-    cc_processor._submit_stripe_transaction.mockRestore();
-    cc_processor._save_card_to_webuser.mockRestore();
-    cc_processor._save_card.mockRestore();
-  })
 
   test('returns false if token response is a falsy value', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);

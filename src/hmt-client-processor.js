@@ -40,6 +40,14 @@ var hmt_client_processor = function(settings){
     return 'https://' + (this.env == 'local' || this.env == 'dev' || this.env == 'staging' ? 'apitest.authorize.net' : 'api2.authorize.net') + '/xml/v1/request.api';
   }
 
+  this.stripe_url = function() {
+    return 'https://api.stripe.com/v1/';
+  }
+
+  this.stripe_token_url = function() {
+    return this.stripe_url() + 'tokens';
+  }
+
   /*
   PUBLIC FUNCTIONS
   */
@@ -67,9 +75,10 @@ var hmt_client_processor = function(settings){
       this._respond(error, res, cb)
 
     }
-
-    // determine the method to use spreedly | fullsteam | authnet
+      
+    // determine the method to use spreedly | fullsteam | authnet | stripe
     if(transaction.processor_method == 'spreedly'){
+      // Spreedly is going away soon.
       this._submit_spreedly(card, transaction, cb).then((result) => {
         response(result, cb, transaction)
       })
@@ -81,6 +90,10 @@ var hmt_client_processor = function(settings){
       this._submit_authnet(card, transaction, cb).then((result) => {
         response(result, cb, transaction)
       })
+    }else if(transaction.processor_method == 'stripe'){
+      this._submit_stripe(card, transaction, cb).then((result) => {
+        response(result, cb, transaction)
+      });
     }else{
       this._add_internal_error('No processing method setup')
       response(false, cb, transaction)
@@ -206,7 +219,7 @@ var hmt_client_processor = function(settings){
     if (transaction.payment_token)
       return await this._submit_fullsteam_transaction(transaction)
 
-    var authentication_key_res = await this._get_auth_key()
+    var authentication_key_res = await this._get_auth_key(transaction)
 
     var auth_key = null
 
@@ -244,14 +257,24 @@ var hmt_client_processor = function(settings){
 
   }
 
+  /**
+   * Makes a call to HMT backend to get the auth key based on the processor
+   * 
+   * @param {*} transaction 
+   * @returns 
+   */
   this._get_auth_key = async function(transaction){
     //hit HMT servers to get a public key used for obtaining card token
-    var processor_hash = transaction && transaction.processor_hash ? transaction.processor_hash : ''
+    var processor_hash = transaction?.processor_hash || null;
     var params = {}
+
     if(this.captcha_token)
       params.captcha_token = this.captcha_token;
+
     if(processor_hash)
       params.processor_hash = processor_hash;
+
+    params.v = '0.0.83';
 
     var token_res = await this._request({
       url: this.url(this.auth_key_url(), true)+(params ? ('?' + Qs.stringify(params)) : ''),
@@ -571,6 +594,166 @@ var hmt_client_processor = function(settings){
 
   this._get_authnet_contry_code = function(transaction){}
 
+  /* STRIPE */
+
+  this._submit_stripe = async function(card, transaction, cb){
+    // saved payment tokens can be submitted without needing to create a token, simply submit payment token
+    if (transaction.payment_token && transaction.stripe_account_id)
+      return await this._submit_stripe_transaction(transaction)
+
+    var account_id;
+    var authentication_key_res = await this._get_auth_key(transaction)
+    var auth_key = null
+
+    if(authentication_key_res &&
+      authentication_key_res.status &&
+      authentication_key_res.status == 'ok' &&
+      authentication_key_res.auth_key &&
+      authentication_key_res.stripe_account_id
+    ) {
+      auth_key = authentication_key_res.auth_key;
+      account_id = authentication_key_res.stripe_account_id;
+    }
+
+    if(!auth_key){
+      this._add_processing_error(authentication_key_res.msg || 'Processor error (Code: CP10001)');
+      return false;
+    }
+
+    var token_res = await this._get_stripe_token(card, transaction, auth_key, account_id);
+
+    if(!token_res || !token_res.id) {
+      if(!token_res){
+        this._add_processing_error('Unable to charge card. Please check Adblocker / Firewall settings and try again.')
+      }
+      return this._add_internal_error('Stripe, Could not get token');
+    }
+
+    transaction.payment_token = token_res.id
+    transaction.stripe_account_id = account_id
+
+    var transaction_res = await this._submit_stripe_transaction(transaction)
+
+    // no saving cards to webuser for stripe
+
+    return transaction_res
+
+  }
+
+  /**
+   *  
+   * @param {*} transaction 
+   * @param {*} cb 
+   * @returns 
+   */
+  this._submit_stripe_transaction = async function(transaction, cb){
+    if (transaction.payments)
+      transaction.payments = this._update_payments_token(transaction.payments, transaction.payment_token)
+
+    transaction = this._remove_sensitive_card_data(transaction)
+
+    if (this.charge_workers) {
+      var create_charge_worker_res = await this._request({
+        url: this.url('shop/carts/create_charge_worker', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+
+      if (create_charge_worker_res.status == 'error')
+        return this._add_processing_error('There was an error processing your transaction.');
+
+      var transaction_res = await this._check_charge_worker(create_charge_worker_res.worker_reference);
+    } else {
+      var transaction_res = await this._request({
+        url: this.url('shop/carts/submit', true),
+        type: 'POST',
+        data: transaction,
+        form_encoded: true,
+        withCredentials: true
+      });
+    }
+
+    return transaction_res
+  }
+
+  this._get_stripe_token = async function(card, transaction, auth_key, account_id) {
+
+    if(
+      !card ||
+      !card.payment_method ||
+      !card.payment_method.credit_card ||
+      !card.payment_method.credit_card.number ||
+      !card.payment_method.credit_card.month ||
+      !card.payment_method.credit_card.year ||
+      !card.payment_method.credit_card.full_name ||
+      !card.payment_method.credit_card.verification_value
+    ){
+      this._add_processing_error('Missing required card inputs')
+      return false
+    }
+
+    const cardDetails = {
+      number: card.payment_method.credit_card.number.replace(/\s/g, ''),
+      exp_month: card.payment_method.credit_card.month,
+      exp_year: card.payment_method.credit_card.year,
+      cvc: card.payment_method.credit_card.verification_value,
+      address_line1: transaction.address1 || null,
+      addressline_2: transaction.address2 || null,
+      address_city: transaction.city || null,
+      address_state: transaction.state || null,
+      address_zip: transaction.zip || null,
+      address_country: this._get_fullsteam_contry_code(transaction),
+      name: card.payment_method.credit_card.full_name,
+      email: transaction.email1 || null,
+    };
+
+    for(var key in cardDetails) {
+      if(cardDetails[key] == null) {
+        delete cardDetails[key]
+      }
+      else {
+        cardDetails[key] = encodeURIComponent(cardDetails[key])
+      }      
+    }
+
+    const formData = new URLSearchParams();
+
+    formData.append('card[number]', card.payment_method.credit_card.number.replace(/\s/g, ''));
+    formData.append('card[exp_month]', card.payment_method.credit_card.month);
+    formData.append('card[exp_year]', card.payment_method.credit_card.year);
+    formData.append('card[cvc]', card.payment_method.credit_card.verification_value);
+    formData.append('card[address_line1]', transaction.address1 || null);
+    formData.append('card[address_line2]', transaction.address2 || null);
+    formData.append('card[address_city]', transaction.city || null);
+    formData.append('card[address_state]', transaction.state || null);
+    formData.append('card[address_zip]', transaction.zip || null);
+    formData.append('card[address_country]', this._get_fullsteam_contry_code(transaction));
+    formData.append('card[name]', card.payment_method.credit_card.full_name);
+
+    const response = await fetch(this.stripe_token_url(), {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + auth_key, // HMT Account Publishable Key
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Stripe-Account': account_id, // connected account id
+        },
+        body: formData.toString(),
+    });
+
+    const json = await response.json();
+
+    if(!json.id){
+      this._add_processing_error(json.error.message)
+
+    }
+
+    return json;
+  };
+
+  /** END STRIPE */
+
   /* Card Saving Fns */
 
   this._save_card = async function(card, transaction, processor, ticket_key){
@@ -872,6 +1055,8 @@ var hmt_client_processor = function(settings){
       this.card_processor = args.processor
     if(args.ticket_key)
       this.card_ticket_key = args.ticket_key
+    if(args.auth_key)
+      this.card_auth_key = args.auth_key
 
   }
 
@@ -912,6 +1097,8 @@ var hmt_client_processor = function(settings){
       // default
       var headers = {}
 
+      const processor = opts.processor || 'fullsteam';
+
       if(opts.json)
         headers['content-type'] = 'application/json;charset=UTF-8'
 
@@ -937,8 +1124,14 @@ var hmt_client_processor = function(settings){
 
       }
 
-      if(opts.auth_key)
+      if(processor === 'stripe' && opts.auth_key){
+        headers['Authorization'] = 'Bearer ' + opts.auth_key;
+      }
+      else if(opts.auth_key) {
         headers['authenticationKey'] = opts.auth_key
+      }
+
+      headers['x-hmtcp-version'] = '0.0.83';
 
       var url = opts.url
 
@@ -1036,6 +1229,7 @@ var hmt_client_processor = function(settings){
     } catch(error) {
       console.error('xhr error', error)
       console.error('could not parse the response to json', xhr)
+      res.message = error
     }
 
     if(!res.status && res.status !== 'error')

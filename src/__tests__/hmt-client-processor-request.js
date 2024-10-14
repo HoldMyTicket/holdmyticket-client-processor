@@ -151,6 +151,39 @@ describe('_request', () => {
     })
   })
 
+  test('console.error if JSON.parse errors in _xhr_success', () => {
+    const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
+
+    jest.spyOn(cc_processor, '_logger');
+    jest.spyOn(cc_processor, '_xhr_success');
+    jest.spyOn(JSON, 'parse');
+
+    // spy on the console.error without outputting anything
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    cc_processor._logger.mockImplementationOnce((url, data, xhr, opts) => undefined);
+
+    JSON.parse.mockImplementationOnce(() => {
+      throw new Error('JSON parse error');
+    });
+
+    const mockXHR = {
+      responseText: '{"invalidJson": true}', // This should be a valid JSON string
+      status: 200,
+      statusText: 'OK',
+      onreadystatechange: jest.fn(),
+    };
+
+    // Mock _xhr_success method to call the _xhr_success directly with mockXHR
+    cc_processor._xhr_success(mockXHR);
+    
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    cc_processor._xhr_success.mockRestore();
+    JSON.parse.mockRestore();
+    consoleErrorSpy.mockRestore();
+  });
+
   test('resolves with _xhr_success if status is 200', () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 

@@ -219,7 +219,7 @@ var hmt_client_processor = function(settings){
     if (transaction.payment_token)
       return await this._submit_fullsteam_transaction(transaction)
 
-    var authentication_key_res = await this._get_auth_key()
+    var authentication_key_res = await this._get_auth_key(transaction)
 
     var auth_key = null
 
@@ -265,10 +265,12 @@ var hmt_client_processor = function(settings){
    */
   this._get_auth_key = async function(transaction){
     //hit HMT servers to get a public key used for obtaining card token
-    var processor_hash = transaction && transaction.processor_hash ? transaction.processor_hash : ''
+    var processor_hash = transaction?.processor_hash || null;
     var params = {}
+
     if(this.captcha_token)
       params.captcha_token = this.captcha_token;
+
     if(processor_hash)
       params.processor_hash = processor_hash;
 
@@ -595,13 +597,12 @@ var hmt_client_processor = function(settings){
   /* STRIPE */
 
   this._submit_stripe = async function(card, transaction, cb){
-    console.log({transaction})
     // saved payment tokens can be submitted without needing to create a token, simply submit payment token
     if (transaction.payment_token && transaction.stripe_account_id)
       return await this._submit_stripe_transaction(transaction)
 
     var account_id;
-    var authentication_key_res = await this._get_auth_key()
+    var authentication_key_res = await this._get_auth_key(transaction)
     var auth_key = null
 
     if(authentication_key_res &&
@@ -780,17 +781,6 @@ var hmt_client_processor = function(settings){
 
       this._save_card_to_webuser(args);
 
-    }
-
-    if(processor == 'stripe'){
-      const token_res = await this._get_stripe_token(card, transaction, transaction.auth_key, transaction.stripe_account_id);
-
-      if(!token_res || !token_res.id)
-        return
-
-      args.token = token_res.id;
-
-      this._save_card_to_webuser(args);
     }
 
     if(processor == 'fullsteam'){

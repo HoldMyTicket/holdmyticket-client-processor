@@ -340,6 +340,22 @@ var hmt_client_processor = function(settings){
         else {
           msg = "Card Declined: An error has occurred, please check that all the information entered is correct and resubmit. If this issue persists please contact HoldMyTicket."
         }
+      }  else if (res) {
+        //some Fulslteam responses do not have issuer details... like when it couldn't make it to the issuer at all
+        var responseError = res.responseCode || "";
+        if(res.responseDetails){
+          //can be an array, might be an object??
+          if(res.responseDetails.message)
+            msg = res.responseDetails.message
+          if(Array.isArray(res.responseDetails)) {
+            if (
+              res.responseDetails[0] &&
+              res.responseDetails[0].message
+            ) {
+              msg = res.responseDetails[0].message
+            }
+          }
+        }
       }
 
       if (msg == "" && this.errors_processing.length == 0)

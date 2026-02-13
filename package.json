@@ -62,7 +62,7 @@
     "webpack-stream": "^7.0.0"
   },
   "dependencies": {
-    "qs": "^6.9.1"
+    "qs": "^6.14.2"
   },
   "peerDependencies": {}
 }

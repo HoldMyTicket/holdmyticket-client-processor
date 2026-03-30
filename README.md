@@ -1,6 +1,9 @@
 # holdmyticket-client-processor
 
-to setup dev server
+Browser-side payment processing SDK for HMT apps that submits transactions to HMT endpoints and integrates with Spreedly, Fullsteam, and Authorize.net, including tokenization, saved cards, and error handling.
+
+
+### Setup dev server
 
 ```
 gulp --type dev

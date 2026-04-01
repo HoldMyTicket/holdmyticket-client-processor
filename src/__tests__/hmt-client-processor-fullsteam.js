@@ -209,7 +209,7 @@ describe('_get_auth_key', () => {
 
     expect(cc_processor._request).toHaveBeenCalledTimes(1);
     expect(cc_processor._request).toHaveBeenCalledWith({
-      url: 'http://holdmyticket.loc/api/shop/processors/get_authentication_key?',
+      url: 'http://holdmyticket.loc/api/shop/processors/get_authentication_key?v=0.0.83',
       withCredentials: true,
     })
 

@@ -1,4 +1,5 @@
 import hmt_client_processor from '../hmt-client-processor';
+import packageJson from '../../package.json';
 import { fullsteam_transaction_data } from '../test/test-data';
 
 const hmt_client_processor_settings = {
@@ -6,6 +7,7 @@ const hmt_client_processor_settings = {
   env : 'dev',
   api_url_suffix : ''
 }
+const clientProcessorVersion = packageJson.version;
 
 const oldXMLHttpRequest = window.XMLHttpRequest;
 let mockXHR = null;
@@ -72,8 +74,9 @@ describe('_logger', () => {
 
     expect(mockXHR).toHaveProperty('withCredentials', true);
 
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1);
+    expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(2);
     expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('content-type', 'application/json;charset=UTF-8');
+    expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('x-hmtcp-version', clientProcessorVersion);
 
     expect(mockXHR.send).toHaveBeenCalledTimes(1);
     expect(mockXHR.send).toHaveBeenCalledWith(JSON.stringify(prepare_for_log_response));
@@ -111,8 +114,9 @@ describe('_log_bad_trans', () => {
 
     expect(mockXHR).toHaveProperty('withCredentials', true);
 
-    expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(1);
+    expect(mockXHR.setRequestHeader).toHaveBeenCalledTimes(2);
     expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+    expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('x-hmtcp-version', clientProcessorVersion);
 
     expect(mockXHR.send).toHaveBeenCalledTimes(1);
     // expect(mockXHR.send).toHaveBeenCalledWith(fullsteam_transaction_data);

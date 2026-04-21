@@ -1,4 +1,5 @@
 import hmt_client_processor from '../hmt-client-processor';
+import packageJson from '../../package.json';
 import {
   successful_transaction_response,
   successful_create_charge_worker_response,
@@ -16,6 +17,7 @@ const hmt_client_processor_settings = {
   env : 'dev',
   api_url_suffix : ''
 }
+const clientProcessorVersion = packageJson.version;
 
 let fresh_card_data;
 
@@ -209,7 +211,7 @@ describe('_get_auth_key', () => {
 
     expect(cc_processor._request).toHaveBeenCalledTimes(1);
     expect(cc_processor._request).toHaveBeenCalledWith({
-      url: 'http://holdmyticket.loc/api/shop/processors/get_authentication_key?v=0.0.83',
+      url: `http://holdmyticket.loc/api/shop/processors/get_authentication_key?`,
       withCredentials: true,
     })
 

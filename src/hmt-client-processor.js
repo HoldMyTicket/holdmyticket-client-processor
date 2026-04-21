@@ -1,5 +1,8 @@
 import Qs from 'qs';
 import { CVV_response_codes, error_issuer_response_codes, responseCodes, AVS_response_codes } from '../src/fullsteamCodes/fullsteamCodes';
+import packageJson from '../package.json';
+
+const HMT_CLIENT_PROCESSOR_VERSION = packageJson && packageJson.version ? packageJson.version : '0.0.0';
 
 var hmt_client_processor = function(settings){
 
@@ -12,6 +15,7 @@ var hmt_client_processor = function(settings){
   this.spreedly_environment_key = settings.spreedly_environment_key || ''
   this.charge_workers = settings.charge_workers || false
   this.captcha_token = settings.captcha_token || false
+  this.version = settings.version || HMT_CLIENT_PROCESSOR_VERSION
 
   this.errors_internal = [] // errors to handle internally
   this.errors_processing = [] // errors to send back to clients regarding processing status
@@ -274,7 +278,6 @@ var hmt_client_processor = function(settings){
     if(processor_hash)
       params.processor_hash = processor_hash;
 
-    params.v = '0.0.83';
 
     var token_res = await this._request({
       url: this.url(this.auth_key_url(), true)+(params ? ('?' + Qs.stringify(params)) : ''),
@@ -621,11 +624,10 @@ var hmt_client_processor = function(settings){
     var authentication_key_res = await this._get_auth_key(transaction)
     var auth_key = null
 
-    if(authentication_key_res &&
-      authentication_key_res.status &&
-      authentication_key_res.status == 'ok' &&
-      authentication_key_res.auth_key &&
-      authentication_key_res.stripe_account_id
+    if(
+      authentication_key_res?.status == 'ok' &&
+      authentication_key_res?.auth_key?.length > 0 &&
+      authentication_key_res?.stripe_account_id?.length > 0
     ) {
       auth_key = authentication_key_res.auth_key;
       account_id = authentication_key_res.stripe_account_id;
@@ -710,58 +712,49 @@ var hmt_client_processor = function(settings){
       return false
     }
 
-    const cardDetails = {
-      number: card.payment_method.credit_card.number.replace(/\s/g, ''),
-      exp_month: card.payment_method.credit_card.month,
-      exp_year: card.payment_method.credit_card.year,
-      cvc: card.payment_method.credit_card.verification_value,
-      address_line1: transaction.address1 || null,
-      addressline_2: transaction.address2 || null,
-      address_city: transaction.city || null,
-      address_state: transaction.state || null,
-      address_zip: transaction.zip || null,
-      address_country: this._get_fullsteam_contry_code(transaction),
-      name: card.payment_method.credit_card.full_name,
-      email: transaction.email1 || null,
-    };
-
-    for(var key in cardDetails) {
-      if(cardDetails[key] == null) {
-        delete cardDetails[key]
-      }
-      else {
-        cardDetails[key] = encodeURIComponent(cardDetails[key])
-      }      
-    }
-
     const formData = new URLSearchParams();
 
     formData.append('card[number]', card.payment_method.credit_card.number.replace(/\s/g, ''));
     formData.append('card[exp_month]', card.payment_method.credit_card.month);
     formData.append('card[exp_year]', card.payment_method.credit_card.year);
     formData.append('card[cvc]', card.payment_method.credit_card.verification_value);
-    formData.append('card[address_line1]', transaction.address1 || null);
-    formData.append('card[address_line2]', transaction.address2 || null);
-    formData.append('card[address_city]', transaction.city || null);
-    formData.append('card[address_state]', transaction.state || null);
-    formData.append('card[address_zip]', transaction.zip || null);
-    formData.append('card[address_country]', this._get_fullsteam_contry_code(transaction));
+    if(transaction.address1)
+      formData.append('card[address_line1]', transaction.address1);
+    if(transaction.address2)
+      formData.append('card[address_line2]', transaction.address2);
+    if(transaction.city)
+      formData.append('card[address_city]', transaction.city);
+    if(transaction.state)
+      formData.append('card[address_state]', transaction.state);
+    if(transaction.zip)
+      formData.append('card[address_zip]', transaction.zip);
+
+    const country = this._get_fullsteam_contry_code(transaction)
+    if(country)
+      formData.append('card[address_country]', country);
+
     formData.append('card[name]', card.payment_method.credit_card.full_name);
+
+    const headers = {
+      'Authorization': 'Bearer ' + auth_key,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'x-hmtcp-version': this.version
+    }
+
+    // Buy-rate model does not use the connected stripe account ID in the header for toeknization
+    // if(account_id)
+    //   headers['Stripe-Account'] = account_id
 
     const response = await fetch(this.stripe_token_url(), {
         method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + auth_key, // HMT Account Publishable Key
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Stripe-Account': account_id, // connected account id
-        },
+        headers: headers,
         body: formData.toString(),
     });
 
     const json = await response.json();
 
     if(!json.id){
-      this._add_processing_error(json.error.message)
+      this._add_processing_error(json?.error?.message || 'Unable to create Stripe token')
 
     }
 
@@ -1147,7 +1140,7 @@ var hmt_client_processor = function(settings){
         headers['authenticationKey'] = opts.auth_key
       }
 
-      headers['x-hmtcp-version'] = '0.0.83';
+      headers['x-hmtcp-version'] = this.version;
 
       var url = opts.url
 
@@ -1322,6 +1315,7 @@ var hmt_client_processor = function(settings){
       xhr.open('POST', this.url('shop/processors/logme2342311', true), true);
       xhr.withCredentials = true
       xhr.setRequestHeader('content-type', 'application/json;charset=UTF-8')
+      xhr.setRequestHeader('x-hmtcp-version', this.version)
       xhr.send(JSON.stringify(log))
 
     } catch(error) {
@@ -1366,6 +1360,7 @@ var hmt_client_processor = function(settings){
       xhr.open('POST', this.url('shop/carts/log_bad_trans', true), true);
       xhr.withCredentials = true
       xhr.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8')
+      xhr.setRequestHeader('x-hmtcp-version', this.version)
       xhr.send(this._serializer(d))
 
     } catch(error) {

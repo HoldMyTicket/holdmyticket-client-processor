@@ -1,4 +1,5 @@
 import hmt_client_processor from '../hmt-client-processor';
+import packageJson from '../../package.json';
 import {
   successful_transaction_response,
   successful_create_charge_worker_response,
@@ -18,6 +19,7 @@ const hmt_client_processor_settings = {
   env : 'dev',
   api_url_suffix : ''
 }
+const clientProcessorVersion = packageJson.version;
 
 let fresh_card_data;
 
@@ -54,7 +56,7 @@ describe('_get_auth_key', () => {
 
     expect(cc_processor._request).toHaveBeenCalledTimes(1);
     expect(cc_processor._request).toHaveBeenCalledWith({
-      url: 'http://holdmyticket.loc/api/shop/processors/get_authentication_key?v=0.0.83',
+      url: `http://holdmyticket.loc/api/shop/processors/get_authentication_key?`,
       withCredentials: true,
     })
 
@@ -187,14 +189,12 @@ describe('_get_stripe_token', () => {
     fresh_stripe_transaction_data = JSON.parse(JSON.stringify(stripe_transaction_data));
     fresh_card_data = JSON.parse(JSON.stringify(card_data));
     fresh_stripe_token_response_error = JSON.parse(JSON.stringify(stripe_token_response_error));
+    global.fetch.mockClear();
   });
 
   test('returns token and makes request with correct data', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
-
-    jest.spyOn(global, 'fetch');
-
-    const auth_key = await cc_processor._get_auth_key();
+    const auth_key = stripe_authentication_key_response_success.auth_key;
     const stripe_token_response = await cc_processor._get_stripe_token(fresh_card_data, fresh_stripe_transaction_data, auth_key, fresh_stripe_transaction_data.stripe_account_id);
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -205,26 +205,23 @@ describe('_get_stripe_token', () => {
           headers: {
               'Authorization': `Bearer ${auth_key}`,
               'Content-Type': 'application/x-www-form-urlencoded',
-              'Stripe-Account': fresh_stripe_transaction_data.stripe_account_id,
+              'x-hmtcp-version': clientProcessorVersion,
           },
           body: expect.any(String), // Since the body is URLSearchParams, it will be a string
       }
     );
 
     expect(stripe_token_response).toBe(stripe_token_response_success);
-
-    global.fetch.mockRestore();
   })
 
   test('processing errors are added if token response returned with errors', async () => {
     const cc_processor = new hmt_client_processor(hmt_client_processor_settings);
 
-    jest.spyOn(global, 'fetch');
     jest.spyOn(cc_processor, '_add_processing_error');
     cc_processor._add_processing_error.mockImplementationOnce((err) => false);
 
     // Mock fetch to return an error response
-    jest.spyOn(global, 'fetch').mockImplementationOnce(() =>
+    global.fetch.mockImplementationOnce(() =>
       Promise.resolve({
         'ok': false,
         'status': 400,
@@ -243,7 +240,7 @@ describe('_get_stripe_token', () => {
           headers: {
               'Authorization': `Bearer ${auth_key}`,
               'Content-Type': 'application/x-www-form-urlencoded',
-              'Stripe-Account': fresh_stripe_transaction_data.stripe_account_id,
+              'x-hmtcp-version': clientProcessorVersion,
           },
           body: expect.any(String), // Since the body is URLSearchParams, it will be a string
       }
@@ -253,8 +250,6 @@ describe('_get_stripe_token', () => {
     expect(cc_processor._add_processing_error).toHaveBeenCalledWith(stripe_token_response_error.error.message);
 
     expect(stripe_token_response).toBe(stripe_token_response_error);
-
-    global.fetch.mockRestore();
   })
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "holdmyticket-client-processor",
-  "version": "0.0.86-alpha.1",
+  "version": "0.0.86-alpha.2",
   "main": "/dist/hmtclientprocessor.min.js",
   "repository": "https://github.com/HoldMyTicket/holdmyticket-client-processor.git",
   "author": "devs@holdmyticket.com",

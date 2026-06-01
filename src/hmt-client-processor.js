@@ -5,16 +5,15 @@ import packageJson from '../package.json';
 const HMT_CLIENT_PROCESSOR_VERSION = packageJson && packageJson.version ? packageJson.version : '0.0.0';
 
 var hmt_client_processor = function(settings){
-
-  this.api_url = settings.api_url || '' // set when the script is loaded
-  this.api_url_suffix = settings.api_url_suffix || '' // set when the script is loaded
-  this.env = settings.env || '' // set when the script is loaded
-  this.app_type = settings.app_type || '' // set prior to submit (online | box)
-  this.isHmtMobile = settings.isHmtMobile || false
-  this.auth = settings.app_type == 'box' && settings.auth || ''
-  this.spreedly_environment_key = settings.spreedly_environment_key || ''
-  this.charge_workers = settings.charge_workers || false
-  this.captcha_token = settings.captcha_token || false
+  this.api_url = settings?.api_url || '' // set when the script is loaded
+  this.api_url_suffix = settings?.api_url_suffix || '' // set when the script is loaded
+  this.env = settings?.env || '' // set when the script is loaded
+  this.app_type = settings?.app_type || '' // set prior to submit (online | box)
+  this.isHmtMobile = settings?.isHmtMobile || false
+  this.auth = settings?.app_type == 'box' && settings?.auth || ''
+  this.spreedly_environment_key = settings?.spreedly_environment_key || ''
+  this.charge_workers = settings?.charge_workers || false
+  this.captcha_token = settings?.captcha_token || false
   this.version = HMT_CLIENT_PROCESSOR_VERSION
 
   this.errors_internal = [] // errors to handle internally
